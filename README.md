@@ -11,21 +11,54 @@
   - Converted vacuum services (`start`, `stop`, `return_to_base`, `locate`, `clean_spot`) to async methods
   - Fixed battery sensor (`SensorDeviceClass.BATTERY`, `native_value`, `SensorStateClass.MEASUREMENT`)
   - Switched schedule switch to `SwitchEntity` with async on/off
-- Fixed config flow translation placeholders for `{docs_url}`
+- Fixed translation placeholders (`{docs_url}`) in the config flow
+- General code cleanup and compatibility fixes for HA 2025.x
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
-# homeassistant-vorwerk
+---
 
-Home assistant integration to control Vorwerk VR vacuum cleaners.
+# Vorwerk integration for Home Assistant
 
-With the new Vorwerk App and authentication the Home Assistant Neato component dropped the vorwerk support. This integration is based on the neato component with the new Vorwerk authentication flow. 
+Custom integration to control Vorwerk Kobold VR series vacuum cleaners.
+
+The official Home Assistant Neato integration removed Vorwerk support due to changes in the Vorwerk App and its authentication system.  
+This custom component restores functionality using the updated Vorwerk cloud login flow.
 
 ## Supported vacuum cleaners
- 
- - VR200
- - VR300 (without map sensors)
 
- ## Installation
+- **VR200**
+- **VR300** (map sensors not supported)
 
- Use HACS or checkout this repository and copy the `custom_components/vorwerk` folder in your home assistant configuration under: `<HA config directory>/custom_components/<domain>`
+---
+
+## Installation
+
+### Via HACS (recommended)
+
+1. In HACS: *Integrations → Custom Repositories*
+2. Add:  
+   `https://github.com/bndtblds/homeassistant-vorwerk`  
+   Category: **Integration**
+3. Install the integration.
+4. Restart Home Assistant.
+5. Add the integration via *Settings → Devices & Services → Add Integration → Vorwerk Kobold*.
+
+### Manual installation
+
+1. Download or clone this repository.
+2. Copy all files into: <HA config directory>/custom_components/vorwerk
+3. Restart Home Assistant.
+4. Add the integration through the UI.
+
+---
+
+## Credits
+
+- Original work by **@trunneml**
+- Maintenance, compatibility updates and fixes by **@bndtblds**
+
+---
+
+License: Apache-2.0
+
