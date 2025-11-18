@@ -1,11 +1,17 @@
-# Repository Archived
+# homeassistant-vorwerk (maintained fork)
 
-**Notice:** This repository is now archived and will no longer be maintained.  
+> **Fork of [`trunneml/homeassistant-vorwerk`](https://github.com/trunneml/homeassistant-vorwerk)**  
+> Updated to work with recent Home Assistant versions (2024.12 / 2025.x) and the current Vorwerk cloud authentication.
 
-The integration was created to support Vorwerk Vacuum Cleaner robots. As I no longer own such a device, I am unable to continue development or provide support.  
+## Changes in this fork (0.9.7)
 
-Feel free to fork this repository if you'd like to continue its development or adapt it for your needs. Thank you to everyone who has contributed or used this integration!
-
+- Updated to Home Assistant 2024.12 / 2025.x API:
+  - Replaced deprecated `async_forward_entry_setup` with `async_forward_entry_setups`
+  - Updated `vacuum.py` to use `StateVacuumEntity`, `VacuumEntityFeature` and `VacuumActivity`
+  - Converted vacuum services (`start`, `stop`, `return_to_base`, `locate`, `clean_spot`) to async methods
+  - Fixed battery sensor (`SensorDeviceClass.BATTERY`, `native_value`, `SensorStateClass.MEASUREMENT`)
+  - Switched schedule switch to `SwitchEntity` with async on/off
+- Fixed config flow translation placeholders for `{docs_url}`
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 

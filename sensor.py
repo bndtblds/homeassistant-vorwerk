@@ -1,86 +1,68 @@
 """Support for Vorwerk sensors."""
-import logging
+from __future__ import annotations
 
-from pybotvac.robot import Robot
+from typing import Any
 
-from homeassistant.components.sensor import DEVICE_CLASS_BATTERY
 from homeassistant.const import PERCENTAGE
-from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator,
+from homeassistant.core import HomeAssistant
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorDeviceClass,
+    SensorStateClass,
 )
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import VorwerkState
 from .const import (
     VORWERK_DOMAIN,
+    VORWERK_ROBOTS,
     VORWERK_ROBOT_API,
     VORWERK_ROBOT_COORDINATOR,
-    VORWERK_ROBOTS,
 )
 
-_LOGGER = logging.getLogger(__name__)
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
+    """Set up Vorwerk sensors from a config entry."""
+    data = hass.data[VORWERK_DOMAIN][entry.entry_id][VORWERK_ROBOTS]
+    entities: list[SensorEntity] = []
+
+    for robot in data:
+        state = robot[VORWERK_ROBOT_API]
+        coordinator = robot[VORWERK_ROBOT_COORDINATOR]
+        entities.append(VorwerkBatterySensor(state, coordinator))
+
+    async_add_entities(entities)
 
 
-BATTERY = "Battery"
+class VorwerkBatterySensor(CoordinatorEntity, SensorEntity):
+    """Battery level for a Vorwerk robot."""
 
+    _attr_device_class = SensorDeviceClass.BATTERY
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_icon = "mdi:battery"
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up the Vorwerk sensor using config entry."""
-    _LOGGER.debug("Adding sensors for vorwerk robots")
-    async_add_entities(
-        [
-            VorwerkSensor(robot[VORWERK_ROBOT_API], robot[VORWERK_ROBOT_COORDINATOR])
-            for robot in hass.data[VORWERK_DOMAIN][entry.entry_id][VORWERK_ROBOTS]
-        ],
-        True,
-    )
-
-
-class VorwerkSensor(CoordinatorEntity, Entity):
-    """Vorwerk sensor."""
-
-    def __init__(
-        self, robot_state: VorwerkState, coordinator: DataUpdateCoordinator
-    ) -> None:
-        """Initialize Vorwerk sensor."""
+    def __init__(self, robot_state, coordinator) -> None:
         super().__init__(coordinator)
-        self.robot: Robot = robot_state.robot
-        self._state: VorwerkState = robot_state
-        self._robot_name = f"{self.robot.name} {BATTERY}"
-        self._robot_serial = self.robot.serial
+        self._state = robot_state
+        # Anzeigename + IDs
+        self._attr_name = f"{self._state.robot.name} Battery"
+        self._attr_unique_id = f"{self._state.robot.serial}_battery"
 
     @property
-    def name(self):
-        """Return the name of this sensor."""
-        return self._robot_name
+    def native_value(self) -> int | None:
+        """Return battery level as percentage."""
+        level = self._state.battery_level
+        try:
+            return int(level) if level is not None else None
+        except (TypeError, ValueError):
+            return None
 
     @property
-    def unique_id(self):
-        """Return unique ID."""
-        return self._robot_serial
+    def available(self) -> bool:
+        return bool(self._state.available)
 
     @property
-    def device_class(self):
-        """Return the device class."""
-        return DEVICE_CLASS_BATTERY
-
-    @property
-    def available(self):
-        """Return availability."""
-        return self._state.available
-
-    @property
-    def state(self):
-        """Return the state."""
-        return self._state.battery_level
-
-    @property
-    def unit_of_measurement(self):
-        """Return unit of measurement."""
-        return PERCENTAGE
-
-    @property
-    def device_info(self):
+    def device_info(self) -> dict[str, Any]:
         """Device info for robot."""
         return self._state.device_info

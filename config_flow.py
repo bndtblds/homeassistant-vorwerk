@@ -32,7 +32,6 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
     """Vorwerk integration config flow."""
 
     VERSION = 1
-    CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
 
     def __init__(self):
         """Initialize the config flow."""
@@ -56,6 +55,7 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
                     vol.Required(CONF_EMAIL): str,
                 }
             ),
+            description_placeholders={"docs_url": "https://github.com/bndtblds/homeassistant-vorwerk"}
         )
 
     async def async_step_code(
@@ -92,6 +92,7 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
                     vol.Required(CONF_CODE): str,
                 }
             ),
+            description_placeholders={"docs_url": "https://github.com/bndtblds/homeassistant-vorwerk"},
             errors=errors,
         )
 
