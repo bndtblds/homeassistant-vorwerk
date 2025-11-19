@@ -3,16 +3,10 @@
 > **Fork of [`trunneml/homeassistant-vorwerk`](https://github.com/trunneml/homeassistant-vorwerk)**  
 > Updated to work with recent Home Assistant versions (2024.12 / 2025.x) and the current Vorwerk cloud authentication.
 
-## Changes in this fork (0.9.7)
+This repository contains a maintained fork of the original Vorwerk Kobold integration for Home Assistant.
 
-- Updated to Home Assistant 2024.12 / 2025.x API:
-  - Replaced deprecated `async_forward_entry_setup` with `async_forward_entry_setups`
-  - Updated `vacuum.py` to use `StateVacuumEntity`, `VacuumEntityFeature` and `VacuumActivity`
-  - Converted vacuum services (`start`, `stop`, `return_to_base`, `locate`, `clean_spot`) to async methods
-  - Fixed battery sensor (`SensorDeviceClass.BATTERY`, `native_value`, `SensorStateClass.MEASUREMENT`)
-  - Switched schedule switch to `SwitchEntity` with async on/off
-- Fixed translation placeholders (`{docs_url}`) in the config flow
-- General code cleanup and compatibility fixes for HA 2025.x
+All changes and technical details can be found in the  
+➡️ **[CHANGELOG.md](./CHANGELOG.md)**
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
@@ -47,7 +41,7 @@ This custom component restores functionality using the updated Vorwerk cloud log
 ### Manual installation
 
 1. Download or clone this repository.
-2. Copy all files into: <HA config directory>/custom_components/vorwerk
+2. Copy all files into: /config/custom_components/vorwerk
 3. Restart Home Assistant.
 4. Add the integration through the UI.
 
@@ -61,4 +55,3 @@ This custom component restores functionality using the updated Vorwerk cloud log
 ---
 
 License: Apache-2.0
-
