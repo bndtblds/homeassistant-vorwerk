@@ -1,19 +1,13 @@
 {
   "domain": "vorwerk",
   "name": "Vorwerk Kobold",
-  "config_flow": true,
+  "version": "0.9.7",
   "documentation": "https://github.com/bndtblds/homeassistant-vorwerk",
-  "requirements": [
-    "pybotvac==0.0.28", 
-    "requests>=2.31.0"
-  ],
-  "codeowners": [
-    "@trunneml",
-    "@bndtblds"
-  ],
-  "dependencies": [
-    "http"
-  ],
+  "issue_tracker": "https://github.com/bndtblds/homeassistant-vorwerk/issues",
+  "codeowners": ["@bndtblds"],
+  "config_flow": true,
+  "requirements": ["pybotvac==0.0.28"],
   "iot_class": "cloud_polling",
-  "version": "0.9.7"
+  "loggers": ["custom_components.vorwerk"],
+  "integration_type": "hub"
 }
