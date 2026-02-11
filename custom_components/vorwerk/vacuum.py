@@ -5,11 +5,8 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.components.vacuum import (
-    VacuumEntity,
-    VacuumEntityFeature,
-    VacuumActivity,
-)
+from homeassistant.components.vacuum import VacuumEntityFeature, VacuumActivity
+from homeassistant.components.vacuum.entity import VacuumEntity
 from homeassistant.const import ATTR_MODE
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
