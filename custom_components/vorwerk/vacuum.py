@@ -6,7 +6,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components.vacuum import (
-    StateVacuumEntity,
+    VacuumEntity,
     VacuumEntityFeature,
     VacuumActivity,
 )
@@ -36,7 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     robots = hass.data[VORWERK_DOMAIN][entry.entry_id][VORWERK_ROBOTS]
 
-    entities: list[StateVacuumEntity] = []
+    entities: list[VacuumEntity] = []
 
     for robot in robots:
         state: VorwerkState = robot[VORWERK_ROBOT_API]
@@ -60,7 +60,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         "vorwerk_custom_cleaning",
     )
 
-class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
+class VorwerkConnectedVacuum(CoordinatorEntity, VacuumEntity):
     """Representation of a Vorwerk Connected Vacuum."""
 
     # _attr_has_entity_name = True
