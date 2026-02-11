@@ -8,6 +8,6 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/bndtblds/homeassistant-vorwerk/issues",
   "loggers": ["custom_components.vorwerk"],
-  "requirements": ["pybotvac==0.0.28"],
+  "requirements": ["pybotvac @ git+https://github.com/bndtblds/pybotvac.git@master"],
   "version": "0.9.7"
 }
