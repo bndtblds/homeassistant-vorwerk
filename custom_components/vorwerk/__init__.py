@@ -208,28 +208,28 @@ class VorwerkState:
             and self.robot_state["details"]["isCharging"]
         )
 
-	@property
-	def activity(self) -> VacuumActivity | None:
-		"""Return Home Assistant vacuum activity."""
-		if not self.available:
-			return None
-		robot_state = self.robot_state.get("state")
-		if self.charging or self.docked:
-			return VacuumActivity.DOCKED
-		if robot_state == ROBOT_STATE_IDLE:
-			return VacuumActivity.IDLE
-		if robot_state == ROBOT_STATE_BUSY:
-			action = self.robot_state.get("action")
-			return (
-				VacuumActivity.CLEANING
-				if action in ROBOT_CLEANING_ACTIONS
-				else VacuumActivity.RETURNING
-			)
-		if robot_state == ROBOT_STATE_PAUSE:
-			return VacuumActivity.PAUSED
-		if robot_state == ROBOT_STATE_ERROR:
-			return VacuumActivity.ERROR
-		return None
+    @property
+    def activity(self) -> VacuumActivity | None:
+        """Return Home Assistant vacuum activity."""
+        if not self.available:
+            return None
+        robot_state = self.robot_state.get("state")
+        if self.charging or self.docked:
+            return VacuumActivity.DOCKED
+        if robot_state == ROBOT_STATE_IDLE:
+            return VacuumActivity.IDLE
+        if robot_state == ROBOT_STATE_BUSY:
+            action = self.robot_state.get("action")
+            return (
+                VacuumActivity.CLEANING
+                if action in ROBOT_CLEANING_ACTIONS
+                else VacuumActivity.RETURNING
+            )
+        if robot_state == ROBOT_STATE_PAUSE:
+            return VacuumActivity.PAUSED
+        if robot_state == ROBOT_STATE_ERROR:
+            return VacuumActivity.ERROR
+        return None
 
     @property
     def alert(self) -> str | None:
