@@ -5,8 +5,11 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.components.vacuum import VacuumEntityFeature, VacuumActivity
-from homeassistant.components.vacuum.entity import VacuumEntity
+from homeassistant.components.vacuum import (
+    StateVacuumEntity,
+    VacuumActivity,
+    VacuumEntityFeature,
+)
 from homeassistant.const import ATTR_MODE
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
@@ -33,7 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     robots = hass.data[VORWERK_DOMAIN][entry.entry_id][VORWERK_ROBOTS]
 
-    entities: list[VacuumEntity] = []
+    entities: list[StateVacuumEntity] = []
 
     for robot in robots:
         state: VorwerkState = robot[VORWERK_ROBOT_API]
@@ -57,7 +60,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         "vorwerk_custom_cleaning",
     )
 
-class VorwerkConnectedVacuum(CoordinatorEntity, VacuumEntity):
+class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
     """Representation of a Vorwerk Connected Vacuum."""
 
     # _attr_has_entity_name = True
@@ -109,6 +112,26 @@ class VorwerkConnectedVacuum(CoordinatorEntity, VacuumEntity):
         if s == "error":
             return VacuumActivity.ERROR
         return None
+
+    @property
+    def state(self) -> str | None:
+        """Return legacy vacuum state string for StateVacuumEntity."""
+        if not self.available:
+            return None
+    
+        a = self.activity
+        if a is None:
+            return None
+    
+        return {
+            VacuumActivity.DOCKED: "docked",
+            VacuumActivity.IDLE: "idle",
+            VacuumActivity.CLEANING: "cleaning",
+            VacuumActivity.PAUSED: "paused",
+            VacuumActivity.RETURNING: "returning",
+            VacuumActivity.ERROR: "error",
+        }.get(a)
+
 
     @property
     def battery_level(self) -> int | None:
