@@ -96,7 +96,7 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
 
     @property
     def activity(self) -> VacuumActivity | None:
-        s = self._state.state
+        s = self._state.status
         if s is None:
             return None
         if s == "cleaning":
@@ -118,11 +118,9 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
         """Return legacy vacuum state string for StateVacuumEntity."""
         if not self.available:
             return None
-    
         a = self.activity
         if a is None:
             return None
-    
         return {
             VacuumActivity.DOCKED: "docked",
             VacuumActivity.IDLE: "idle",
@@ -131,7 +129,6 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
             VacuumActivity.RETURNING: "returning",
             VacuumActivity.ERROR: "error",
         }.get(a)
-
 
     @property
     def battery_level(self) -> int | None:
