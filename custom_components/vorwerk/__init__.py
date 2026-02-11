@@ -10,14 +10,7 @@ from pybotvac.robot import Robot
 from pybotvac.vorwerk import Vorwerk
 import voluptuous as vol
 
-from homeassistant.components.vacuum import (
-    STATE_CLEANING,
-    STATE_DOCKED,
-    STATE_ERROR,
-    STATE_IDLE,
-    STATE_PAUSED,
-    STATE_RETURNING,
-)
+from homeassistant.components.vacuum import VacuumActivity
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -215,25 +208,28 @@ class VorwerkState:
             and self.robot_state["details"]["isCharging"]
         )
 
-    @property
-    def state(self) -> str | None:
-        """Return Home Assistant vacuum state."""
-        if not self.available:
-            return None
-        robot_state = self.robot_state.get("state")
-        state = None
-        if self.charging or self.docked:
-            state = STATE_DOCKED
-        elif robot_state == ROBOT_STATE_IDLE:
-            state = STATE_IDLE
-        elif robot_state == ROBOT_STATE_BUSY:
-            action = self.robot_state.get("action")
-            state = STATE_CLEANING if action in ROBOT_CLEANING_ACTIONS else STATE_RETURNING
-        elif robot_state == ROBOT_STATE_PAUSE:
-            state = STATE_PAUSED
-        elif robot_state == ROBOT_STATE_ERROR:
-            state = STATE_ERROR
-        return state
+	@property
+	def activity(self) -> VacuumActivity | None:
+		"""Return Home Assistant vacuum activity."""
+		if not self.available:
+			return None
+		robot_state = self.robot_state.get("state")
+		if self.charging or self.docked:
+			return VacuumActivity.DOCKED
+		if robot_state == ROBOT_STATE_IDLE:
+			return VacuumActivity.IDLE
+		if robot_state == ROBOT_STATE_BUSY:
+			action = self.robot_state.get("action")
+			return (
+				VacuumActivity.CLEANING
+				if action in ROBOT_CLEANING_ACTIONS
+				else VacuumActivity.RETURNING
+			)
+		if robot_state == ROBOT_STATE_PAUSE:
+			return VacuumActivity.PAUSED
+		if robot_state == ROBOT_STATE_ERROR:
+			return VacuumActivity.ERROR
+		return None
 
     @property
     def alert(self) -> str | None:
@@ -251,22 +247,22 @@ class VorwerkState:
             return None
 
         status = None
-        if self.state == STATE_ERROR:
+        if self.activity == VacuumActivity.ERROR:
             status = self._error_status()
         elif self.alert:
             status = self.alert
-        elif self.state == STATE_DOCKED:
+        elif self.activity == VacuumActivity.DOCKED:
             if self.charging:
                 status = "Charging"
-            if self.docked:
+            elif self.docked:
                 status = "Docked"
-        elif self.state == STATE_IDLE:
+        elif self.activity == VacuumActivity.IDLE:
             status = "Stopped"
-        elif self.state == STATE_CLEANING:
+        elif self.activity == VacuumActivity.CLEANING:
             status = self._cleaning_status()
-        elif self.state == STATE_PAUSED:
+        elif self.activity == VacuumActivity.PAUSED:
             status = "Paused"
-        elif self.state == STATE_RETURNING:
+        elif self.activity == VacuumActivity.RETURNING:
             status = "Returning"
 
         return status
