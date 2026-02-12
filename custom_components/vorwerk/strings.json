@@ -6,7 +6,7 @@
         "data": {
           "email": "[%key:common::config_flow::data::email%]"
         },
-        "description": "To recieve an authentication code, enter the email address of your vorwerk account."
+        "description": "To receive an authentication code, enter the email address of your vorwerk account."
       },
       "code": {
         "title": "Vorwerk Account Info",
