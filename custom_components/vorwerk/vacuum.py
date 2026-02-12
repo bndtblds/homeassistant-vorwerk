@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
+import logging
 
 from homeassistant.components.vacuum import (
     StateVacuumEntity,
@@ -96,26 +97,11 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
 
     @property
     def activity(self) -> VacuumActivity | None:
-        s = self._state.status
-        if s is None:
-            return None
-        if s == "cleaning":
-            return VacuumActivity.CLEANING
-        if s == "docked":
-            return VacuumActivity.DOCKED
-        if s == "idle":
-            return VacuumActivity.IDLE
-        if s == "paused":
-            return VacuumActivity.PAUSED
-        if s == "returning":
-            return VacuumActivity.RETURNING
-        if s == "error":
-            return VacuumActivity.ERROR
-        return None
+        return self._state.activity
 
     @property
     def state(self) -> str | None:
-        """Return legacy vacuum state string for StateVacuumEntity."""
+        """Legacy vacuum state string for StateVacuumEntity."""
         if not self.available:
             return None
         a = self.activity
@@ -143,7 +129,7 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         data: dict[str, Any] = {}
         if self._state.status is not None:
-            data[ATTR_STATUS] = self._state.status
+            data[ATTR_STATUS] = self._state.status  # "Stopped", "Docked", ...
         return data
 
     @property
@@ -160,73 +146,74 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
         if not self._state:
             return
         try:
-            if self._state.state in ("idle", "docked", None):
+            if self.activity in (VacuumActivity.IDLE, VacuumActivity.DOCKED, None):
                 await self.hass.async_add_executor_job(self.robot.start_cleaning)
-            elif self._state.state == "paused":
+            elif self.activity == VacuumActivity.PAUSED:
                 await self.hass.async_add_executor_job(self.robot.resume_cleaning)
-        except Exception as ex:  # noqa: BLE001
-            import logging
 
+        except Exception as ex:  # noqa: BLE001
             logging.getLogger(__name__).error(
                 "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
             )
+        if self.coordinator:
+            await self.coordinator.async_request_refresh()
 
     async def async_pause(self):
         """Pause the vacuum."""
         try:
             await self.hass.async_add_executor_job(self.robot.pause_cleaning)
         except Exception as ex:  # noqa: BLE001
-            import logging
-
             logging.getLogger(__name__).error(
                 "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
             )
+        if self.coordinator:
+            await self.coordinator.async_request_refresh()
 
     async def async_stop(self, **kwargs: Any):
         """Stop the vacuum cleaner."""
         try:
             await self.hass.async_add_executor_job(self.robot.stop_cleaning)
         except Exception as ex:  # noqa: BLE001
-            import logging
-
             logging.getLogger(__name__).error(
                 "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
             )
+        if self.coordinator:
+            await self.coordinator.async_request_refresh()
 
     async def async_return_to_base(self, **kwargs: Any):
         """Set the vacuum cleaner to return to the dock."""
         try:
-            if self._state.state == "cleaning":
+            if self.activity == VacuumActivity.CLEANING:
                 await self.hass.async_add_executor_job(self.robot.pause_cleaning)
             await self.hass.async_add_executor_job(self.robot.send_to_base)
         except Exception as ex:  # noqa: BLE001
-            import logging
-
             logging.getLogger(__name__).error(
                 "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
             )
+        if self.coordinator:
+            await self.coordinator.async_request_refresh()
 
     async def async_locate(self, **kwargs: Any):
         """Locate the robot by making it emit a sound."""
         try:
             await self.hass.async_add_executor_job(self.robot.locate)
         except Exception as ex:  # noqa: BLE001
-            import logging
-
             logging.getLogger(__name__).error(
                 "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
             )
+        if self.coordinator:
+            await self.coordinator.async_request_refresh()
 
     async def async_clean_spot(self, **kwargs: Any):
         """Run a spot cleaning starting from the base."""
         try:
             await self.hass.async_add_executor_job(self.robot.start_spot_cleaning)
         except Exception as ex:  # noqa: BLE001
-            import logging
-
             logging.getLogger(__name__).error(
                 "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
             )
+        if self.coordinator:
+            await self.coordinator.async_request_refresh()
 
     # ------------------
     # Custom-Service: vorwerk.custom_cleaning
@@ -248,8 +235,6 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
                     boundary_id = boundary.get("id")
                     break
             if boundary_id is None:
-                import logging
-
                 logging.getLogger(__name__).error(
                     "Zone '%s' was not found for the robot '%s'", zone, self.entity_id
                 )
@@ -260,8 +245,6 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
                 self.robot.start_cleaning, mode, navigation, category, boundary_id
             )
         except Exception as ex:  # noqa: BLE001
-            import logging
-
             logging.getLogger(__name__).error(
                 "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
             )
