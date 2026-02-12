@@ -1,7 +1,7 @@
 # homeassistant-vorwerk (maintained fork)
 
 > **Fork of [`trunneml/homeassistant-vorwerk`](https://github.com/trunneml/homeassistant-vorwerk)**  
-> Updated to work with recent Home Assistant versions (2024.12 / 2025.x) and the current Vorwerk cloud authentication.
+> Updated to work with recent Home Assistant versions (2024.12 / 2025.x / 2026.x) and the current Vorwerk cloud authentication.
 
 This repository contains a maintained fork of the original Vorwerk Kobold integration for Home Assistant.
 
