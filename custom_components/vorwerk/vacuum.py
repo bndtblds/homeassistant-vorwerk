@@ -117,15 +117,6 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
         }.get(a)
 
     @property
-    def battery_level(self) -> int | None:
-        """Batterie – wird perspektivisch über den Sensor abgelöst."""
-        level = self._state.battery_level
-        try:
-            return int(level) if level is not None else None
-        except (TypeError, ValueError):
-            return None
-
-    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         data: dict[str, Any] = {}
         if self._state.status is not None:

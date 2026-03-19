@@ -9,5 +9,5 @@
   "issue_tracker": "https://github.com/bndtblds/homeassistant-vorwerk/issues",
   "loggers": ["custom_components.vorwerk"],
   "requirements": ["pybotvac==0.0.28"],
-  "version": "0.9.8"
+  "version": "0.9.9"
 }
