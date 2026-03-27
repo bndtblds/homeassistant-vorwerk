@@ -1,28 +1,63 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "title": "Vorwerk-Kontoinformationen",
-          "data": {
-            "email": "E-Mailaddresse"
-          },
-          "description": "Um einen Authentifizierungscode per E-Mail zu erhalten, gib die E-Mailadresse deines Vorwerk-Accounts ein.\n\nSiehe [Vorwerk-Dokumentation]({docs_url})."
+  "config": {
+    "step": {
+      "user": {
+        "title": "Vorwerk-Konto",
+        "data": {
+          "email": "E-Mail-Adresse"
         },
-        "code": {
-          "title": "Vorwerk Account Info",
-          "data": {
-            "code": "Code"
-          },
-          "description": "Gib den per E-Mail erhaltenen Code ein.\n\nSee [Vorwerk documentation]({docs_url})."
-        }
+        "description": "Gib die E-Mail-Adresse deines MyKobold-Kontos ein, um einen einmaligen Anmeldecode zu erhalten.\n\nSiehe [Vorwerk-Dokumentation]({docs_url})."
       },
-      "error": {
-        "invalid_auth": "Ung\u00fcltige Authentifizierung"
-      },
-      "abort": {
-        "invalid_auth": "Ung\u00fcltige Authentifizierung",
-        "already_configured": "Bereits konfiguriert"
+      "code": {
+        "title": "Vorwerk-Konto",
+        "data": {
+          "code": "Code"
+        },
+        "description": "Gib den per E-Mail erhaltenen Code ein.\n\nSiehe [Vorwerk-Dokumentation]({docs_url})."
       }
     },
-    "title": "Vorwerk Kobold"
+    "error": {
+      "invalid_auth": "Ungültige Authentifizierung"
+    },
+    "abort": {
+      "already_configured": "Konto ist bereits konfiguriert"
+    }
+  },
+  "services": {
+    "custom_cleaning": {
+      "name": "Benutzerdefinierte Reinigung starten",
+      "description": "Startet eine Reinigung mit expliziten Vorwerk-Reinigungsparametern.",
+      "fields": {
+        "mode": {
+          "name": "Reinigungsmodus",
+          "description": "Setzt den Reinigungsmodus: 1 für Eco, 2 für Turbo."
+        },
+        "navigation": {
+          "name": "Navigationsmodus",
+          "description": "Setzt den Navigationsmodus: 1 für normal, 2 für extra vorsichtig, 3 für tief."
+        },
+        "category": {
+          "name": "Kartennutzung",
+          "description": "Legt fest, ob ohne Karte (2) oder mit persistenter Karte (4) gereinigt wird."
+        },
+        "zone": {
+          "name": "Zone",
+          "description": "Optionaler Zonenname für Roboter mit unterstützter Grenzflächenreinigung."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Batterie"
+      }
+    },
+    "switch": {
+      "schedule": {
+        "name": "Zeitplan"
+      }
+    }
+  },
+  "title": "Vorwerk Kobold"
 }

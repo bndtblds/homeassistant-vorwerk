@@ -2,27 +2,62 @@
   "config": {
     "step": {
       "user": {
-        "title": "Vorwerk Account Info",
+        "title": "Vorwerk account",
         "data": {
           "email": "[%key:common::config_flow::data::email%]"
         },
-        "description": "To receive an authentication code, enter the email address of your vorwerk account."
+        "description": "Enter the email address of your MyKobold account to receive a one-time login code.\n\nSee [Vorwerk documentation]({docs_url})."
       },
       "code": {
-        "title": "Vorwerk Account Info",
+        "title": "Vorwerk account",
         "data": {
           "code": "Code"
         },
-        "description": "Enter the code you received by email."
+        "description": "Enter the code you received by email.\n\nSee [Vorwerk documentation]({docs_url})."
       }
     },
     "error": {
       "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]"
     },
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_account%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]"
+      "already_configured": "[%key:common::config_flow::abort::already_configured_account%]"
     }
   },
-  "title": "Vorwerk Botvac"
+  "services": {
+    "custom_cleaning": {
+      "name": "Start custom cleaning",
+      "description": "Start a cleaning run with explicit Vorwerk cleaning parameters.",
+      "fields": {
+        "mode": {
+          "name": "Cleaning mode",
+          "description": "Set the cleaning mode: 1 for eco, 2 for turbo."
+        },
+        "navigation": {
+          "name": "Navigation mode",
+          "description": "Set the navigation mode: 1 for normal, 2 for extra care, 3 for deep."
+        },
+        "category": {
+          "name": "Map usage",
+          "description": "Set whether to clean without a map (2) or using a persistent map (4)."
+        },
+        "zone": {
+          "name": "Zone",
+          "description": "Optional zone name for robots that support mapped boundary cleaning."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Battery"
+      }
+    },
+    "switch": {
+      "schedule": {
+        "name": "Schedule"
+      }
+    }
+  },
+  "title": "Vorwerk Kobold"
 }

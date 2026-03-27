@@ -1,73 +1,54 @@
-"""Support for Neato Connected Vacuums."""
+"""Vacuum platform for Vorwerk robots."""
 from __future__ import annotations
 
-from typing import Any
-
-import voluptuous as vol
 import logging
+from typing import Any
 
 from homeassistant.components.vacuum import (
     StateVacuumEntity,
     VacuumActivity,
     VacuumEntityFeature,
 )
-from homeassistant.const import ATTR_MODE
 from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers import config_validation as cv, entity_platform
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import VorwerkState
-from .const import (
-    ATTR_CATEGORY,
-    ATTR_NAVIGATION,
-    ATTR_ZONE,
-    VORWERK_DOMAIN,
-    VORWERK_ROBOTS,
-    VORWERK_ROBOT_API,
-    VORWERK_ROBOT_COORDINATOR,
-)
+from . import VorwerkConfigEntry
+from .entity import VorwerkEntity
 
-# Früher ATTR_STATUS aus vacuum, jetzt lokal:
+_LOGGER = logging.getLogger(__name__)
+
 ATTR_STATUS = "status"
 
+ACTIVITY_TO_STATE = {
+    VacuumActivity.DOCKED: "docked",
+    VacuumActivity.IDLE: "idle",
+    VacuumActivity.CLEANING: "cleaning",
+    VacuumActivity.PAUSED: "paused",
+    VacuumActivity.RETURNING: "returning",
+    VacuumActivity.ERROR: "error",
+}
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    """Set up Vorwerk vacuum from a config entry."""
 
-    robots = hass.data[VORWERK_DOMAIN][entry.entry_id][VORWERK_ROBOTS]
-
-    entities: list[StateVacuumEntity] = []
-
-    for robot in robots:
-        state: VorwerkState = robot[VORWERK_ROBOT_API]
-        coordinator = robot[VORWERK_ROBOT_COORDINATOR]
-        entities.append(VorwerkConnectedVacuum(state, coordinator))
-
-    async_add_entities(entities, True)
-
-    # Entity-Service wie in deiner alten Version
-    platform = entity_platform.current_platform.get()
-    assert platform is not None
-
-    platform.async_register_entity_service(
-        "custom_cleaning",
-        {
-            vol.Optional(ATTR_MODE, default=2): cv.positive_int,
-            vol.Optional(ATTR_NAVIGATION, default=1): cv.positive_int,
-            vol.Optional(ATTR_CATEGORY, default=4): cv.positive_int,
-            vol.Optional(ATTR_ZONE): cv.string,
-        },
-        "vorwerk_custom_cleaning",
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: VorwerkConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Vorwerk vacuum entities."""
+    async_add_entities(
+        [
+            VorwerkVacuumEntity(robot_runtime.coordinator)
+            for robot_runtime in entry.runtime_data.robots
+        ]
     )
 
-class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
-    """Representation of a Vorwerk Connected Vacuum."""
 
-    # _attr_has_entity_name = True
+class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
+    """Representation of a Vorwerk vacuum cleaner."""
+
+    _attr_has_entity_name = True
     _attr_icon = "mdi:robot-vacuum"
-
-    # Ersatz für dein SUPPORT_VORWERK
+    _attr_name = None
     _attr_supported_features = (
         VacuumEntityFeature.STATE
         | VacuumEntityFeature.START
@@ -78,164 +59,103 @@ class VorwerkConnectedVacuum(CoordinatorEntity, StateVacuumEntity):
         | VacuumEntityFeature.LOCATE
     )
 
-    def __init__(self, robot_state: VorwerkState, coordinator) -> None:
+    def __init__(self, coordinator) -> None:
+        """Initialize the vacuum entity."""
         super().__init__(coordinator)
-        self._state: VorwerkState = robot_state
-        self.robot = robot_state.robot
-
-        self._attr_name = self.robot.name
         self._attr_unique_id = self.robot.serial
         self._robot_boundaries: list[dict[str, Any]] = []
 
-    # ------------------
-    # Status / Activity
-    # ------------------
-
-    @property
-    def available(self) -> bool:
-        return self._state.available
-
     @property
     def activity(self) -> VacuumActivity | None:
-        return self._state.activity
+        """Return the current vacuum activity."""
+        return self.robot_state.activity
 
     @property
     def state(self) -> str | None:
-        """Legacy vacuum state string for StateVacuumEntity."""
-        if not self.available:
+        """Return the legacy string state for the vacuum entity."""
+        activity = self.activity
+        if activity is None:
             return None
-        a = self.activity
-        if a is None:
-            return None
-        return {
-            VacuumActivity.DOCKED: "docked",
-            VacuumActivity.IDLE: "idle",
-            VacuumActivity.CLEANING: "cleaning",
-            VacuumActivity.PAUSED: "paused",
-            VacuumActivity.RETURNING: "returning",
-            VacuumActivity.ERROR: "error",
-        }.get(a)
+        return ACTIVITY_TO_STATE.get(activity)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        data: dict[str, Any] = {}
-        if self._state.status is not None:
-            data[ATTR_STATUS] = self._state.status  # "Stopped", "Docked", ...
-        return data
+        """Return additional state attributes."""
+        if (status := self.robot_state.status) is None:
+            return {}
+        return {ATTR_STATUS: status}
 
-    @property
-    def device_info(self):
-        """Device info for robot."""
-        return self._state.device_info
-
-    # ------------------
-    # Befehle
-    # ------------------
-
-    async def async_start(self):
-        """Start cleaning or resume cleaning."""
-        if not self._state:
+    async def async_start(self) -> None:
+        """Start or resume a cleaning run."""
+        if self.activity == VacuumActivity.PAUSED:
+            await self._async_call_robot_command(self.robot.resume_cleaning)
             return
-        try:
-            if self.activity in (VacuumActivity.IDLE, VacuumActivity.DOCKED, None):
-                await self.hass.async_add_executor_job(self.robot.start_cleaning)
-            elif self.activity == VacuumActivity.PAUSED:
-                await self.hass.async_add_executor_job(self.robot.resume_cleaning)
 
-        except Exception as ex:  # noqa: BLE001
-            logging.getLogger(__name__).error(
-                "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
+        await self._async_call_robot_command(self.robot.start_cleaning)
+
+    async def async_pause(self) -> None:
+        """Pause the current cleaning run."""
+        await self._async_call_robot_command(self.robot.pause_cleaning)
+
+    async def async_stop(self, **kwargs: Any) -> None:
+        """Stop the current cleaning run."""
+        await self._async_call_robot_command(self.robot.stop_cleaning)
+
+    async def async_return_to_base(self, **kwargs: Any) -> None:
+        """Send the robot back to the base."""
+        if self.activity == VacuumActivity.CLEANING:
+            await self._async_call_robot_command(
+                self.robot.pause_cleaning,
+                refresh=False,
             )
-        if self.coordinator:
-            await self.coordinator.async_request_refresh()
 
-    async def async_pause(self):
-        """Pause the vacuum."""
-        try:
-            await self.hass.async_add_executor_job(self.robot.pause_cleaning)
-        except Exception as ex:  # noqa: BLE001
-            logging.getLogger(__name__).error(
-                "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
-            )
-        if self.coordinator:
-            await self.coordinator.async_request_refresh()
+        await self._async_call_robot_command(self.robot.send_to_base)
 
-    async def async_stop(self, **kwargs: Any):
-        """Stop the vacuum cleaner."""
-        try:
-            await self.hass.async_add_executor_job(self.robot.stop_cleaning)
-        except Exception as ex:  # noqa: BLE001
-            logging.getLogger(__name__).error(
-                "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
-            )
-        if self.coordinator:
-            await self.coordinator.async_request_refresh()
+    async def async_locate(self, **kwargs: Any) -> None:
+        """Play the locate sound on the robot."""
+        await self._async_call_robot_command(self.robot.locate)
 
-    async def async_return_to_base(self, **kwargs: Any):
-        """Set the vacuum cleaner to return to the dock."""
-        try:
-            if self.activity == VacuumActivity.CLEANING:
-                await self.hass.async_add_executor_job(self.robot.pause_cleaning)
-            await self.hass.async_add_executor_job(self.robot.send_to_base)
-        except Exception as ex:  # noqa: BLE001
-            logging.getLogger(__name__).error(
-                "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
-            )
-        if self.coordinator:
-            await self.coordinator.async_request_refresh()
+    async def async_clean_spot(self, **kwargs: Any) -> None:
+        """Start a spot clean."""
+        await self._async_call_robot_command(self.robot.start_spot_cleaning)
 
-    async def async_locate(self, **kwargs: Any):
-        """Locate the robot by making it emit a sound."""
-        try:
-            await self.hass.async_add_executor_job(self.robot.locate)
-        except Exception as ex:  # noqa: BLE001
-            logging.getLogger(__name__).error(
-                "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
-            )
-        if self.coordinator:
-            await self.coordinator.async_request_refresh()
-
-    async def async_clean_spot(self, **kwargs: Any):
-        """Run a spot cleaning starting from the base."""
-        try:
-            await self.hass.async_add_executor_job(self.robot.start_spot_cleaning)
-        except Exception as ex:  # noqa: BLE001
-            logging.getLogger(__name__).error(
-                "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
-            )
-        if self.coordinator:
-            await self.coordinator.async_request_refresh()
-
-    # ------------------
-    # Custom-Service: vorwerk.custom_cleaning
-    # ------------------
-
-    async def vorwerk_custom_cleaning(
+    async def async_custom_cleaning(
         self,
         mode: int,
         navigation: int,
         category: int,
         zone: str | None = None,
     ) -> None:
-        """Zone cleaning service call."""
-        boundary_id: str | None = None
+        """Start a custom cleaning run."""
+        boundary_id = self._resolve_boundary_id(zone)
+        if zone is not None and boundary_id is None:
+            return
 
-        if zone is not None:
-            for boundary in self._robot_boundaries:
-                if zone in boundary.get("name", ""):
-                    boundary_id = boundary.get("id")
-                    break
-            if boundary_id is None:
-                logging.getLogger(__name__).error(
-                    "Zone '%s' was not found for the robot '%s'", zone, self.entity_id
-                )
-                return
+        await self._async_call_robot_command(
+            self.robot.start_cleaning,
+            mode,
+            navigation,
+            category,
+            boundary_id,
+        )
 
-        try:
-            await self.hass.async_add_executor_job(
-                self.robot.start_cleaning, mode, navigation, category, boundary_id
-            )
-        except Exception as ex:  # noqa: BLE001
-            logging.getLogger(__name__).error(
-                "Vorwerk vacuum connection error for '%s': %s", self.entity_id, ex
-            )
+    def _resolve_boundary_id(self, zone: str | None) -> str | None:
+        """Resolve a zone name to a boundary identifier."""
+        if zone is None:
+            return None
+
+        normalized_zone = zone.casefold()
+        for boundary in self._robot_boundaries:
+            name = boundary.get("name")
+            boundary_id = boundary.get("id")
+            if not isinstance(name, str) or not isinstance(boundary_id, str):
+                continue
+            if normalized_zone in name.casefold():
+                return boundary_id
+
+        _LOGGER.error(
+            "Zone '%s' was not found for robot %s. No boundaries are currently available to match against.",
+            zone,
+            self.robot.name,
+        )
+        return None

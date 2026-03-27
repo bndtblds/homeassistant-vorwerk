@@ -1,68 +1,48 @@
-"""Support for Vorwerk sensors."""
+"""Sensor platform for Vorwerk robots."""
 from __future__ import annotations
 
-from typing import Any
-
-from homeassistant.const import PERCENTAGE
-from homeassistant.core import HomeAssistant
 from homeassistant.components.sensor import (
-    SensorEntity,
     SensorDeviceClass,
+    SensorEntity,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.const import PERCENTAGE
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import (
-    VORWERK_DOMAIN,
-    VORWERK_ROBOTS,
-    VORWERK_ROBOT_API,
-    VORWERK_ROBOT_COORDINATOR,
-)
+from . import VorwerkConfigEntry
+from .entity import VorwerkEntity
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    """Set up Vorwerk sensors from a config entry."""
-    data = hass.data[VORWERK_DOMAIN][entry.entry_id][VORWERK_ROBOTS]
-    entities: list[SensorEntity] = []
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: VorwerkConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Vorwerk sensors."""
+    async_add_entities(
+        [
+            VorwerkBatterySensor(robot_runtime.coordinator)
+            for robot_runtime in entry.runtime_data.robots
+        ]
+    )
 
-    for robot in data:
-        state = robot[VORWERK_ROBOT_API]
-        coordinator = robot[VORWERK_ROBOT_COORDINATOR]
-        entities.append(VorwerkBatterySensor(state, coordinator))
 
-    async_add_entities(entities)
-
-
-class VorwerkBatterySensor(CoordinatorEntity, SensorEntity):
-    """Battery level for a Vorwerk robot."""
+class VorwerkBatterySensor(VorwerkEntity, SensorEntity):
+    """Battery level sensor for a Vorwerk robot."""
 
     _attr_device_class = SensorDeviceClass.BATTERY
-    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_has_entity_name = True
+    _attr_translation_key = "battery"
     _attr_native_unit_of_measurement = PERCENTAGE
-    _attr_icon = "mdi:battery"
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, robot_state, coordinator) -> None:
+    def __init__(self, coordinator) -> None:
+        """Initialize the battery sensor."""
         super().__init__(coordinator)
-        self._state = robot_state
-        # Anzeigename + IDs
-        self._attr_name = f"{self._state.robot.name} Battery"
-        self._attr_unique_id = f"{self._state.robot.serial}_battery"
+        self._attr_unique_id = f"{self.robot.serial}_battery"
 
     @property
     def native_value(self) -> int | None:
-        """Return battery level as percentage."""
-        level = self._state.battery_level
-        try:
-            return int(level) if level is not None else None
-        except (TypeError, ValueError):
-            return None
-
-    @property
-    def available(self) -> bool:
-        return bool(self._state.available)
-
-    @property
-    def device_info(self) -> dict[str, Any]:
-        """Device info for robot."""
-        return self._state.device_info
+        """Return battery level as a percentage."""
+        return self.robot_state.battery_level

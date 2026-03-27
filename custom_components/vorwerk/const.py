@@ -1,12 +1,11 @@
-"""Constants for Vorwerk integration."""
+"""Constants for the Vorwerk integration."""
+from __future__ import annotations
+
 from datetime import timedelta
 
 VORWERK_DOMAIN = "vorwerk"
 
 VORWERK_ROBOTS = "robots"
-VORWERK_ROBOT_API = "robot_api"
-VORWERK_ROBOT_COORDINATOR = "robot_coordinator"
-
 VORWERK_ROBOT_NAME = "name"
 VORWERK_ROBOT_SERIAL = "serial"
 VORWERK_ROBOT_SECRET = "secret"
@@ -15,14 +14,12 @@ VORWERK_ROBOT_ENDPOINT = "endpoint"
 
 VORWERK_PLATFORMS = ["vacuum", "switch", "sensor"]
 
-# The client_id is the same for all users.
 VORWERK_CLIENT_ID = "KY4YbVAvtgB7lp8vIbWQ7zLk3hssZlhR"
+DEFAULT_ENDPOINT = "https://nucleo.ksecosys.com:4443"
+
+SERVICE_CUSTOM_CLEANING = "custom_cleaning"
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=1)
-
-ATTR_NAVIGATION = "navigation"
-ATTR_CATEGORY = "category"
-ATTR_ZONE = "zone"
 
 ROBOT_STATE_INVALID = 0
 ROBOT_STATE_IDLE = 1
