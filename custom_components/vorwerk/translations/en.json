@@ -1,28 +1,63 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "title": "Vorwerk Account Info",
-          "data": {
-            "email": "Email"
-          },
-          "description": "To recieve an authentication code, enter the email address of your vorwerk account.\n\nSee [Vorwerk documentation]({docs_url})."
+  "config": {
+    "step": {
+      "user": {
+        "title": "Vorwerk account",
+        "data": {
+          "email": "Email"
         },
-        "code": {
-          "title": "Vorwerk Account Info",
-          "data": {
-            "code": "Code"
-          },
-          "description": "Enter the code you received by email.\n\nSee [Vorwerk documentation]({docs_url})."
-        }
+        "description": "Enter the email address of your MyKobold account to receive a one-time login code.\n\nSee [Vorwerk documentation]({docs_url})."
       },
-      "error": {
-        "invalid_auth": "Invalid authentication"
-      },
-      "abort": {
-        "already_configured": "Account is already configured",
-        "invalid_auth": "Invalid authentication"
+      "code": {
+        "title": "Vorwerk account",
+        "data": {
+          "code": "Code"
+        },
+        "description": "Enter the code you received by email.\n\nSee [Vorwerk documentation]({docs_url})."
       }
     },
-    "title": "Vorwerk Kobold"
+    "error": {
+      "invalid_auth": "Invalid authentication"
+    },
+    "abort": {
+      "already_configured": "Account is already configured"
+    }
+  },
+  "services": {
+    "custom_cleaning": {
+      "name": "Start custom cleaning",
+      "description": "Start a cleaning run with explicit Vorwerk cleaning parameters.",
+      "fields": {
+        "mode": {
+          "name": "Cleaning mode",
+          "description": "Set the cleaning mode: 1 for eco, 2 for turbo."
+        },
+        "navigation": {
+          "name": "Navigation mode",
+          "description": "Set the navigation mode: 1 for normal, 2 for extra care, 3 for deep."
+        },
+        "category": {
+          "name": "Map usage",
+          "description": "Set whether to clean without a map (2) or using a persistent map (4)."
+        },
+        "zone": {
+          "name": "Zone",
+          "description": "Optional zone name for robots that support mapped boundary cleaning."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Battery"
+      }
+    },
+    "switch": {
+      "schedule": {
+        "name": "Schedule"
+      }
+    }
+  },
+  "title": "Vorwerk Kobold"
 }

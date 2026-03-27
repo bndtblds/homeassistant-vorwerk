@@ -1,28 +1,63 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "title": "Compte Vorwerk",
-          "data": {
-            "email": "Email"
-          },
-          "description": "Pour recevoir le code d'authentificaiton (TOTP), renseignez le mail lié à votre compte Vorwerk de l'application MyKobold et non de la boutique.\n\nVoir la [documentation]({docs_url})."
+  "config": {
+    "step": {
+      "user": {
+        "title": "Compte Vorwerk",
+        "data": {
+          "email": "E-mail"
         },
-        "code": {
-          "title": "Compte Vorwerk",
-          "data": {
-            "code": "Code TOTP"
-          },
-          "description": "Renseignez le code reçu par mail.\n\nVoir la [documentation]({docs_url})."
-        }
+        "description": "Saisissez l'adresse e-mail de votre compte MyKobold pour recevoir un code de connexion à usage unique.\n\nVoir la [documentation]({docs_url})."
       },
-      "error": {
-        "invalid_auth": "Authentificaton invalide !"
-      },
-      "abort": {
-        "already_configured": "Ce compte est déà configuré",
-        "invalid_auth": "Authentificaton invalide !"
+      "code": {
+        "title": "Compte Vorwerk",
+        "data": {
+          "code": "Code"
+        },
+        "description": "Saisissez le code reçu par e-mail.\n\nVoir la [documentation]({docs_url})."
       }
     },
-    "title": "Vorwerk Kobold"
+    "error": {
+      "invalid_auth": "Authentification invalide"
+    },
+    "abort": {
+      "already_configured": "Ce compte est déjà configuré"
+    }
+  },
+  "services": {
+    "custom_cleaning": {
+      "name": "Démarrer un nettoyage personnalisé",
+      "description": "Démarre un cycle de nettoyage avec des paramètres Vorwerk explicites.",
+      "fields": {
+        "mode": {
+          "name": "Mode de nettoyage",
+          "description": "Définit le mode de nettoyage : 1 pour éco, 2 pour turbo."
+        },
+        "navigation": {
+          "name": "Mode de navigation",
+          "description": "Définit le mode de navigation : 1 normal, 2 précaution, 3 approfondi."
+        },
+        "category": {
+          "name": "Utilisation de la carte",
+          "description": "Définit si le nettoyage doit se faire sans carte (2) ou avec carte persistante (4)."
+        },
+        "zone": {
+          "name": "Zone",
+          "description": "Nom de zone optionnel pour les robots prenant en charge le nettoyage par zones."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": {
+        "name": "Batterie"
+      }
+    },
+    "switch": {
+      "schedule": {
+        "name": "Planification"
+      }
+    }
+  },
+  "title": "Vorwerk Kobold"
 }

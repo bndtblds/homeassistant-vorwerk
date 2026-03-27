@@ -1,57 +1,110 @@
-# homeassistant-vorwerk (maintained fork)
+# homeassistant-vorwerk
 
-> **Fork of [`trunneml/homeassistant-vorwerk`](https://github.com/trunneml/homeassistant-vorwerk)**  
-> Updated to work with recent Home Assistant versions (2024.12 / 2025.x / 2026.x) and the current Vorwerk cloud authentication.
+Maintained fork of [`trunneml/homeassistant-vorwerk`](https://github.com/trunneml/homeassistant-vorwerk) for current Home Assistant versions and the Vorwerk cloud login flow used by the MyKobold app.
 
-This repository contains a maintained fork of the original Vorwerk Kobold integration for Home Assistant.
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
-All changes and technical details can be found in the  
-➡️ **[CHANGELOG.md](./CHANGELOG.md)**
+This custom integration restores Vorwerk Kobold support that is no longer available in Home Assistant's official Neato integration.
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+## Compatibility
 
----
+- Integration version: `0.9.10`
+- Targeted at current Home Assistant `2026.x` releases
+- Currently pinned to `pybotvac==0.0.28`
 
-# Vorwerk integration for Home Assistant
+## Breaking Changes
 
-Custom integration to control Vorwerk Kobold VR series vacuum cleaners.
+- `0.9.10` is focused on Home Assistant `2026.x` and no longer claims compatibility with older `2024.x` or `2025.x` releases.
+- Legacy YAML configuration is no longer supported; setup is handled exclusively through the UI config flow.
 
-The official Home Assistant Neato integration removed Vorwerk support due to changes in the Vorwerk App and its authentication system.  
-This custom component restores functionality using the updated Vorwerk cloud login flow.
+## Upgrade Notes
 
-## Supported vacuum cleaners
+- Existing installations may keep older entity display names from the Home Assistant entity registry even after upgrading to `0.9.10`.
+- In particular, schedule and battery entities may continue to show the robot name instead of translated defaults such as `Zeitplan` or `Batterie`.
+- If that happens, remove the integration, restart Home Assistant, and set it up again so the current default entity names can be created cleanly.
 
-- **VR200**
-- **VR300** (map sensors not supported)
+## Supported devices
 
----
+- Vorwerk Kobold VR200
+- Vorwerk Kobold VR300
+
+Map-based zone cleaning depends on robot capabilities and available boundaries in the Vorwerk cloud. The VR300 supports named zones; map sensors are not provided by this integration.
+
+## What the integration provides
+
+- `vacuum` entity with start, pause, stop, return-to-base, locate and spot-clean commands
+- `sensor` entity for battery level (`..._battery`)
+- `switch` entity for schedule on/off (`..._schedule`)
+- Config flow with email OTP login against the Vorwerk cloud
+- Custom service `vorwerk.custom_cleaning` for zone or parameterized cleaning
+- UI translations in English, German and French
+- Runtime-data/coordinator based structure aligned with current Home Assistant development guidance
 
 ## Installation
 
-### Via HACS (recommended)
+### HACS
 
-1. In HACS: *Integrations → Custom Repositories*
-2. Add:  
-   `https://github.com/bndtblds/homeassistant-vorwerk`  
-   Category: **Integration**
-3. Install the integration.
-4. Restart Home Assistant.
-5. Add the integration via *Settings → Devices & Services → Add Integration → Vorwerk Kobold*.
+1. Open HACS and go to `Integrations`.
+2. Open the menu for custom repositories.
+3. Add `https://github.com/bndtblds/homeassistant-vorwerk` as category `Integration`.
+4. Install `Vorwerk Kobold`.
+5. Restart Home Assistant.
+6. Add the integration under `Settings -> Devices & Services -> Add Integration`.
 
-### Manual installation
+### Manual
 
 1. Download or clone this repository.
-2. Copy all files into: /config/custom_components/vorwerk
+2. Copy `custom_components/vorwerk` to `/config/custom_components/vorwerk`.
 3. Restart Home Assistant.
-4. Add the integration through the UI.
+4. Add the integration under `Settings -> Devices & Services`.
 
----
+## Configuration
+
+1. Start the `Vorwerk Kobold` config flow in Home Assistant.
+2. Enter the email address used in the MyKobold app.
+3. Enter the one-time code sent by Vorwerk via email.
+4. Home Assistant will discover the robots linked to that account and create the entities automatically.
+
+## Service: `vorwerk.custom_cleaning`
+
+This service can be called on a vacuum entity to start a cleaning run with explicit parameters.
+
+Supported service fields:
+
+- `mode`: cleaning mode, `1` = eco, `2` = turbo
+- `navigation`: navigation mode, `1` = normal, `2` = extra care, `3` = deep
+- `category`: map usage, `2` = no map, `4` = map
+- `zone`: optional named zone, supported on VR300 with available boundaries
+
+Example:
+
+```yaml
+service: vorwerk.custom_cleaning
+target:
+  entity_id: vacuum.vr300
+data:
+  mode: 2
+  navigation: 1
+  category: 4
+  zone: Kitchen
+```
+
+## Notes
+
+- The login uses the Vorwerk cloud account from the MyKobold app, not the Vorwerk shop account.
+- Battery and schedule entities use translated names such as `Batterie` and `Zeitplan` on a clean setup.
+- If zone cleaning is unavailable, start a normal cleaning run first and verify that persistent maps and named boundaries exist in the Vorwerk app.
+- If Home Assistant reports the integration as unavailable after an upgrade, reinstalling through HACS and restarting Home Assistant usually refreshes the custom component metadata.
+
+## Changelog
+
+Release history is maintained in [CHANGELOG.md](./CHANGELOG.md).
 
 ## Credits
 
-- Original work by **@trunneml**
-- Maintenance, compatibility updates and fixes by **@bndtblds**
+- Original integration by **@trunneml**
+- Maintenance and compatibility updates by **@bndtblds**
 
----
+## License
 
-License: Apache-2.0
+Apache-2.0
