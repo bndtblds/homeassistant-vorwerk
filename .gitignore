@@ -130,3 +130,5 @@ dmypy.json
 
 
 sample.py
+
+.vscode/
