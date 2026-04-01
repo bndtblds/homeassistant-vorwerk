@@ -64,6 +64,7 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
         super().__init__(coordinator)
         self._attr_unique_id = self.robot.serial
         self._robot_boundaries: list[dict[str, Any]] = []
+        self._boundaries_loaded = False
 
     @property
     def activity(self) -> VacuumActivity | None:
@@ -144,6 +145,8 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
         if zone is None:
             return None
 
+        self._ensure_boundaries_loaded()
+
         normalized_zone = zone.casefold()
         for boundary in self._robot_boundaries:
             name = boundary.get("name")
@@ -159,3 +162,26 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
             self.robot.name,
         )
         return None
+
+    def _ensure_boundaries_loaded(self) -> None:
+        """Load zone boundaries from the robot once when needed."""
+        if self._boundaries_loaded:
+            return
+
+        self._boundaries_loaded = True
+
+        try:
+            response = self.robot.get_map_boundaries().json()
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning(
+                "Unable to load map boundaries for %s: %s",
+                self.robot.name,
+                err,
+            )
+            return
+
+        boundaries = response.get("data", {}).get("boundaries", [])
+        if isinstance(boundaries, list):
+            self._robot_boundaries = [
+                boundary for boundary in boundaries if isinstance(boundary, dict)
+            ]

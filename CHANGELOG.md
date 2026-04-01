@@ -33,6 +33,7 @@ This project follows a simplified version of the guidelines from
 - Fixed multiple translation issues and wording inconsistencies across config flow texts.
 - Added migration logic for legacy schedule switch entity IDs so existing installations can move toward the `_schedule` naming scheme.
 - Fixed battery and schedule entity naming so Home Assistant exposes translated names such as `Batterie` and `Zeitplan` instead of only the robot name.
+- Fixed zone cleaning lookups to lazily load map boundaries from the robot before resolving a named zone.
 
 ## [0.9.9] - 2026-03-19
 
