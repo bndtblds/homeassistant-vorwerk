@@ -3,6 +3,7 @@
 Maintained fork of [`trunneml/homeassistant-vorwerk`](https://github.com/trunneml/homeassistant-vorwerk) for current Home Assistant versions and the Vorwerk cloud login flow used by the MyKobold app.
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+[![Open your Home Assistant instance and open the HACS repository dialog with a specific repository pre-filled.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bndtblds&repository=homeassistant-vorwerk&category=integration)
 
 This custom integration restores Vorwerk Kobold support that is no longer available in Home Assistant's official Neato integration.
 
@@ -74,7 +75,7 @@ Supported service fields:
 - `mode`: cleaning mode, `1` = eco, `2` = turbo
 - `navigation`: navigation mode, `1` = normal, `2` = extra care, `3` = deep
 - `category`: map usage, `2` = no map, `4` = map
-- `zone`: optional named zone, supported on VR300 with available boundaries
+- `zone`: optional named zone, supported when the robot exposes map boundaries to the API
 
 Example:
 
@@ -93,7 +94,7 @@ data:
 
 - The login uses the Vorwerk cloud account from the MyKobold app, not the Vorwerk shop account.
 - Battery and schedule entities use translated names such as `Batterie` and `Zeitplan` on a clean setup.
-- If zone cleaning is unavailable, start a normal cleaning run first and verify that persistent maps and named boundaries exist in the Vorwerk app.
+- If zone cleaning is unavailable, verify that persistent maps and named boundaries exist in the Vorwerk app and that the robot exposes them through the cloud API.
 - If Home Assistant reports the integration as unavailable after an upgrade, reinstalling through HACS and restarting Home Assistant usually refreshes the custom component metadata.
 
 ## Changelog
