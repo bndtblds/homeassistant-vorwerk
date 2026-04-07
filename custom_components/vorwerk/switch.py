@@ -11,6 +11,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import VorwerkConfigEntry
 from .entity import VorwerkEntity
 
+PARALLEL_UPDATES = 1
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -31,7 +33,6 @@ class VorwerkScheduleSwitch(VorwerkEntity, SwitchEntity):
 
     _attr_entity_category = EntityCategory.CONFIG
     _attr_has_entity_name = True
-    _attr_icon = "mdi:calendar-clock"
     _attr_translation_key = "schedule"
 
     def __init__(self, coordinator) -> None:

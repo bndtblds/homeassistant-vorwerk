@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 This project follows a simplified version of the guidelines from
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+- Moved map boundary loading for zone cleaning into Home Assistant's executor to avoid blocking the event loop.
+- Raised translated Home Assistant service errors when custom cleaning cannot load boundaries, cannot find a requested zone, or a robot command fails.
+- Let the data update coordinator handle robot update failures through `UpdateFailed` so entity availability follows Home Assistant coordinator state.
+- Documented the polling interval and known integration limitations.
+- Moved the schedule switch icon to Home Assistant icon translations and normalized device manufacturer metadata.
+
 ## [0.9.10] - 2026-03-27
 
 ### Breaking Changes

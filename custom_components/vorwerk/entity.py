@@ -5,8 +5,10 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .const import VORWERK_DOMAIN
 from .coordinator import VorwerkDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -24,7 +26,7 @@ class VorwerkEntity(CoordinatorEntity[VorwerkDataUpdateCoordinator]):
     @property
     def available(self) -> bool:
         """Return whether the entity is available."""
-        return self.robot_state.available
+        return super().available and self.robot_state.available
 
     @property
     def device_info(self):
@@ -42,5 +44,10 @@ class VorwerkEntity(CoordinatorEntity[VorwerkDataUpdateCoordinator]):
             await self.hass.async_add_executor_job(command, *args)
         except Exception as err:  # noqa: BLE001
             _LOGGER.error("Vorwerk command failed for %s: %s", self.robot.name, err)
+            raise HomeAssistantError(
+                translation_domain=VORWERK_DOMAIN,
+                translation_key="command_failed",
+                translation_placeholders={"robot": self.robot.name},
+            ) from err
         if refresh:
             await self.coordinator.async_request_refresh()

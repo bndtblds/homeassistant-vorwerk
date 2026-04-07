@@ -59,5 +59,19 @@
       }
     }
   },
+  "exceptions": {
+    "command_failed": {
+      "message": "La commande Vorwerk a échoué pour {robot}."
+    },
+    "load_map_boundaries_failed": {
+      "message": "Impossible de charger les limites de carte pour {robot}."
+    },
+    "no_map_boundaries": {
+      "message": "La zone '{zone}' est introuvable pour {robot}. Aucune limite de carte n'est actuellement disponible."
+    },
+    "zone_not_found": {
+      "message": "La zone '{zone}' est introuvable pour {robot}. Zones disponibles : {available_zones}."
+    }
+  },
   "title": "Vorwerk Kobold"
 }

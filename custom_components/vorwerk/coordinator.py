@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import logging
 
+from pybotvac.exceptions import NeatoException
+
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import MIN_TIME_BETWEEN_UPDATES
 
@@ -26,5 +28,10 @@ class VorwerkDataUpdateCoordinator(DataUpdateCoordinator["VorwerkRobotState"]):
 
     async def _async_update_data(self) -> "VorwerkRobotState":
         """Fetch the latest robot data."""
-        await self.hass.async_add_executor_job(self.robot_state.update)
+        try:
+            await self.hass.async_add_executor_job(self.robot_state.update)
+        except NeatoException as err:
+            raise UpdateFailed(
+                f"Error communicating with Vorwerk robot {self.robot_state.robot.name}: {err}"
+            ) from err
         return self.robot_state
