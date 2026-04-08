@@ -7,15 +7,16 @@ from dataclasses import dataclass
 from typing import Any
 import warnings
 
-warnings.filterwarnings(
-    "ignore",
-    message="pkg_resources is deprecated as an API.*",
-    category=UserWarning,
-)
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore",
+        message="pkg_resources is deprecated as an API.*",
+        category=UserWarning,
+    )
+    from pybotvac.exceptions import NeatoException, NeatoRobotException
+    from pybotvac.robot import Robot
+    from pybotvac.vorwerk import Vorwerk
 
-from pybotvac.exceptions import NeatoException, NeatoRobotException
-from pybotvac.robot import Robot
-from pybotvac.vorwerk import Vorwerk
 import voluptuous as vol
 
 from homeassistant.components.vacuum import DOMAIN as VACUUM_DOMAIN, VacuumActivity
@@ -316,19 +317,11 @@ class VorwerkRobotState:
 
     def _update_robot_state(self) -> None:
         """Fetch the latest dynamic robot state."""
-        had_state = self.available
-
         try:
             state = self.robot.state
-        except NeatoRobotException as err:
-            if had_state:
-                _LOGGER.error(
-                    "Vorwerk vacuum connection error for %s: %s",
-                    self.robot.name,
-                    err,
-                )
+        except NeatoRobotException:
             self.robot_state = {}
-            return
+            raise
 
         if isinstance(state, dict):
             self.robot_state = state
@@ -465,10 +458,9 @@ class VorwerkRobotState:
     @property
     def device_info(self) -> DeviceInfo:
         """Return Home Assistant device information."""
-        battery_info = self.robot_info.get("battery", {})
         return DeviceInfo(
             identifiers={(VORWERK_DOMAIN, self.robot.serial)},
-            manufacturer=battery_info.get("vendor"),
+            manufacturer="Vorwerk",
             model=self.robot_info.get("model"),
             name=self.robot.name,
             sw_version=self.robot_info.get("firmware"),

@@ -10,14 +10,17 @@ from homeassistant.components.vacuum import (
     VacuumEntityFeature,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import VorwerkConfigEntry
+from .const import VORWERK_DOMAIN
 from .entity import VorwerkEntity
 
 _LOGGER = logging.getLogger(__name__)
 
 ATTR_STATUS = "status"
+PARALLEL_UPDATES = 1
 
 ACTIVITY_TO_STATE = {
     VacuumActivity.DOCKED: "docked",
@@ -128,9 +131,7 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
         zone: str | None = None,
     ) -> None:
         """Start a custom cleaning run."""
-        boundary_id = self._resolve_boundary_id(zone)
-        if zone is not None and boundary_id is None:
-            return
+        boundary_id = await self._async_resolve_boundary_id(zone)
 
         await self._async_call_robot_command(
             self.robot.start_cleaning,
@@ -140,12 +141,12 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
             boundary_id,
         )
 
-    def _resolve_boundary_id(self, zone: str | None) -> str | None:
+    async def _async_resolve_boundary_id(self, zone: str | None) -> str | None:
         """Resolve a zone name to a boundary identifier."""
         if zone is None:
             return None
 
-        self._ensure_boundaries_loaded()
+        await self._async_ensure_boundaries_loaded()
 
         normalized_zone = zone.casefold()
         for boundary in self._robot_boundaries:
@@ -156,32 +157,61 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
             if normalized_zone in name.casefold():
                 return boundary_id
 
-        _LOGGER.error(
-            "Zone '%s' was not found for robot %s. No boundaries are currently available to match against.",
-            zone,
-            self.robot.name,
+        available_zones = sorted(
+            boundary["name"]
+            for boundary in self._robot_boundaries
+            if isinstance(boundary.get("name"), str)
         )
-        return None
+        if available_zones:
+            raise ServiceValidationError(
+                translation_domain=VORWERK_DOMAIN,
+                translation_key="zone_not_found",
+                translation_placeholders={
+                    "robot": self.robot.name,
+                    "zone": zone,
+                    "available_zones": ", ".join(available_zones),
+                },
+            )
 
-    def _ensure_boundaries_loaded(self) -> None:
+        raise ServiceValidationError(
+            translation_domain=VORWERK_DOMAIN,
+            translation_key="no_map_boundaries",
+            translation_placeholders={
+                "robot": self.robot.name,
+                "zone": zone,
+            },
+        )
+
+    async def _async_ensure_boundaries_loaded(self) -> None:
         """Load zone boundaries from the robot once when needed."""
         if self._boundaries_loaded:
             return
 
-        self._boundaries_loaded = True
-
         try:
-            response = self.robot.get_map_boundaries().json()
+            self._robot_boundaries = await self.hass.async_add_executor_job(
+                self._load_map_boundaries
+            )
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning(
                 "Unable to load map boundaries for %s: %s",
                 self.robot.name,
                 err,
             )
-            return
+            raise HomeAssistantError(
+                translation_domain=VORWERK_DOMAIN,
+                translation_key="load_map_boundaries_failed",
+                translation_placeholders={"robot": self.robot.name},
+            ) from err
+
+        self._boundaries_loaded = True
+
+    def _load_map_boundaries(self) -> list[dict[str, Any]]:
+        """Load zone boundaries from the blocking pybotvac API."""
+        response = self.robot.get_map_boundaries().json()
 
         boundaries = response.get("data", {}).get("boundaries", [])
         if isinstance(boundaries, list):
-            self._robot_boundaries = [
+            return [
                 boundary for boundary in boundaries if isinstance(boundary, dict)
             ]
+        return []

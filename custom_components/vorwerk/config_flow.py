@@ -4,14 +4,15 @@ from __future__ import annotations
 from typing import Any
 import warnings
 
-warnings.filterwarnings(
-    "ignore",
-    message="pkg_resources is deprecated as an API.*",
-    category=UserWarning,
-)
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore",
+        message="pkg_resources is deprecated as an API.*",
+        category=UserWarning,
+    )
+    import pybotvac
+    from pybotvac.exceptions import NeatoException
 
-import pybotvac
-from pybotvac.exceptions import NeatoException
 from requests import HTTPError
 import voluptuous as vol
 

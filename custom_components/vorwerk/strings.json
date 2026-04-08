@@ -59,5 +59,19 @@
       }
     }
   },
+  "exceptions": {
+    "command_failed": {
+      "message": "Vorwerk command failed for {robot}."
+    },
+    "load_map_boundaries_failed": {
+      "message": "Unable to load map boundaries for {robot}."
+    },
+    "no_map_boundaries": {
+      "message": "Zone '{zone}' was not found for {robot}. No map boundaries are currently available."
+    },
+    "zone_not_found": {
+      "message": "Zone '{zone}' was not found for {robot}. Available zones: {available_zones}."
+    }
+  },
   "title": "Vorwerk Kobold"
 }

@@ -41,6 +41,16 @@ Map-based zone cleaning depends on robot capabilities and available boundaries i
 - UI translations in English, German and French
 - Runtime-data/coordinator based structure aligned with current Home Assistant development guidance
 
+## Data updates
+
+The integration polls the Vorwerk cloud once per minute by default. Polling is coordinated per robot through Home Assistant's `DataUpdateCoordinator`; command calls request a refresh after the command has been sent.
+
+## Known limitations
+
+- The integration depends on the synchronous `pybotvac` library. Blocking library calls are run through Home Assistant's executor, but the dependency itself is not async-native.
+- Zone cleaning depends on the robot exposing map boundaries through the Vorwerk cloud API. Persistent maps or named zones that only exist in the MyKobold app may not always be available to Home Assistant.
+- Reauthentication is not triggered automatically when the Vorwerk cloud rejects stored robot credentials. Remove and re-add the integration if the account or robot credentials change.
+
 ## Installation
 
 ### HACS
