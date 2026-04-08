@@ -53,6 +53,7 @@ from .coordinator import VorwerkDataUpdateCoordinator
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = list(VORWERK_PLATFORMS)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(VORWERK_DOMAIN)
 
 CUSTOM_CLEANING_SCHEMA = cv.make_entity_service_schema(
     {

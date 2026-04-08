@@ -67,10 +67,10 @@
       "message": "Kartengrenzen für {robot} konnten nicht geladen werden."
     },
     "no_map_boundaries": {
-      "message": "Zone '{zone}' wurde für {robot} nicht gefunden. Derzeit sind keine Kartengrenzen verfügbar."
+      "message": "Zone {zone} wurde für {robot} nicht gefunden. Derzeit sind keine Kartengrenzen verfügbar."
     },
     "zone_not_found": {
-      "message": "Zone '{zone}' wurde für {robot} nicht gefunden. Verfügbare Zonen: {available_zones}."
+      "message": "Zone {zone} wurde für {robot} nicht gefunden. Verfügbare Zonen: {available_zones}."
     }
   },
   "title": "Vorwerk Kobold"

@@ -67,10 +67,10 @@
       "message": "Unable to load map boundaries for {robot}."
     },
     "no_map_boundaries": {
-      "message": "Zone '{zone}' was not found for {robot}. No map boundaries are currently available."
+      "message": "Zone {zone} was not found for {robot}. No map boundaries are currently available."
     },
     "zone_not_found": {
-      "message": "Zone '{zone}' was not found for {robot}. Available zones: {available_zones}."
+      "message": "Zone {zone} was not found for {robot}. Available zones: {available_zones}."
     }
   },
   "title": "Vorwerk Kobold"
