@@ -14,6 +14,7 @@ This project follows a simplified version of the guidelines from
 - Documented the polling interval and known integration limitations.
 - Moved the schedule switch icon to Home Assistant icon translations and normalized device manufacturer metadata.
 - Clarified the `pybotvac` pinning rationale and reorganized the README into a more standard user-facing structure.
+- Documented the planned move to calendar versioning in the format `YYYY.M.N`, where `N` is the release sequence within the month.
 
 ## [0.9.10] - 2026-03-27
 

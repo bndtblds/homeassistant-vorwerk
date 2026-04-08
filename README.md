@@ -20,6 +20,13 @@ This custom integration restores Vorwerk Kobold support that is no longer availa
 - Targeted at current Home Assistant `2026.x` releases
 - Currently pinned to `pybotvac==0.0.28` so installs stay reproducible and future `pybotvac` releases are only adopted after explicit verification
 
+## Versioning
+
+- The project is preparing to use calendar versioning in the format `YYYY.M.N`.
+- `YYYY` is the release year, `M` is the release month, and `N` is the release sequence within that month.
+- `N` is not a semantic-versioning patch number.
+- Example: `2026.4.0` is the first release in April 2026, while `2026.4.1` is the second release in April 2026.
+
 ## Supported devices
 
 - Vorwerk Kobold VR200
