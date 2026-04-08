@@ -13,6 +13,7 @@ This project follows a simplified version of the guidelines from
 - Let the data update coordinator handle robot update failures through `UpdateFailed` so entity availability follows Home Assistant coordinator state.
 - Documented the polling interval and known integration limitations.
 - Moved the schedule switch icon to Home Assistant icon translations and normalized device manufacturer metadata.
+- Clarified the `pybotvac` pinning rationale and reorganized the README into a more standard user-facing structure.
 
 ## [0.9.10] - 2026-03-27
 
@@ -62,14 +63,14 @@ This project follows a simplified version of the guidelines from
 - Updated README with current Home Assistant compatibility information.
 
 ### Changed
-- Pinned `pybotvac` to `0.0.28`.
+- Pinned `pybotvac` to `0.0.28` so installs remain reproducible and future dependency updates can be validated explicitly before adoption.
 - Bumped the integration version to `0.9.8`.
 
 ### Fixed
 - Restored compatibility with Home Assistant 2026.2 vacuum API changes.
 - Fixed vacuum activity/state handling.
 - Triggered state refreshes after vacuum commands.
-- Switched away from `pkg_resources`-dependent behavior in the forked `pybotvac` path.
+- Switched away from `pkg_resources`-dependent behavior relied on during `pybotvac` imports.
 - Fixed indentation in `__init__.py`.
 - Corrected a typo in the config flow strings.
 
