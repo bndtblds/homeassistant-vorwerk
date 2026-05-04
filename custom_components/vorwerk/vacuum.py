@@ -1,6 +1,7 @@
 """Vacuum platform for Vorwerk robots."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -14,7 +15,7 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import VorwerkConfigEntry
-from .const import VORWERK_DOMAIN
+from .const import ROBOT_API_TIMEOUT, VORWERK_DOMAIN
 from .entity import VorwerkEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -188,9 +189,17 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
             return
 
         try:
-            self._robot_boundaries = await self.hass.async_add_executor_job(
-                self._load_map_boundaries
+            self._robot_boundaries = await asyncio.wait_for(
+                self.hass.async_add_executor_job(self._load_map_boundaries),
+                timeout=ROBOT_API_TIMEOUT,
             )
+        except asyncio.TimeoutError as err:
+            _LOGGER.warning("Timed out loading map boundaries for %s", self.robot.name)
+            raise HomeAssistantError(
+                translation_domain=VORWERK_DOMAIN,
+                translation_key="load_map_boundaries_failed",
+                translation_placeholders={"robot": self.robot.name},
+            ) from err
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning(
                 "Unable to load map boundaries for %s: %s",

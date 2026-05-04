@@ -20,6 +20,7 @@ DEFAULT_ENDPOINT = "https://nucleo.ksecosys.com:4443"
 SERVICE_CUSTOM_CLEANING = "custom_cleaning"
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=1)
+ROBOT_API_TIMEOUT = 30
 
 ROBOT_STATE_INVALID = 0
 ROBOT_STATE_IDLE = 1
