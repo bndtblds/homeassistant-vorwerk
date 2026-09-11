@@ -43,15 +43,19 @@ class VorwerkDataUpdateCoordinator(DataUpdateCoordinator["VorwerkRobotState"]):
                 "is still running"
             )
 
-        self._update_future = self.hass.async_add_executor_job(self.robot_state.update)
-        self._update_future.add_done_callback(self._async_clear_update_future)
+        update_future = self.hass.async_add_executor_job(self.robot_state.update)
+        self._update_future = update_future
+        update_future.add_done_callback(self._async_clear_update_future)
 
         try:
-            await asyncio.wait_for(
-                asyncio.shield(self._update_future),
+            done, _ = await asyncio.wait(
+                (update_future,),
                 timeout=ROBOT_API_TIMEOUT,
             )
-        except asyncio.TimeoutError as err:
+            if not done:
+                raise TimeoutError
+            await update_future
+        except TimeoutError as err:
             raise UpdateFailed(
                 f"Timed out updating Vorwerk robot {self.robot_state.robot.name}"
             ) from err
