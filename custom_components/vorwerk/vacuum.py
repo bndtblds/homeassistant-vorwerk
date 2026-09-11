@@ -182,7 +182,7 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
                 translation_key="load_map_boundaries_failed",
                 translation_placeholders={"robot": self.robot.name},
             ) from err
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             _LOGGER.warning(
                 "Unable to load map boundaries for %s: %s",
                 self.robot.name,

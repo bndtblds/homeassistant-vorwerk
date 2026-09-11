@@ -1,15 +1,12 @@
 """Tests for Vorwerk robot state normalization and platform setup."""
 from __future__ import annotations
 
-import asyncio
 from unittest.mock import MagicMock, patch
 
 import pytest
-from pybotvac.exceptions import NeatoException, NeatoRobotException
-
-from homeassistant.components.vacuum import VacuumActivity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from pybotvac.exceptions import NeatoException, NeatoRobotException
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.vorwerk import (
@@ -22,10 +19,14 @@ from custom_components.vorwerk.coordinator import VorwerkDataUpdateCoordinator
 from custom_components.vorwerk.sensor import async_setup_entry as setup_sensor
 from custom_components.vorwerk.switch import (
     VorwerkScheduleSwitch,
+)
+from custom_components.vorwerk.switch import (
     async_setup_entry as setup_switch,
 )
 from custom_components.vorwerk.vacuum import (
     VorwerkVacuumEntity,
+)
+from custom_components.vorwerk.vacuum import (
     async_setup_entry as setup_vacuum,
 )
 

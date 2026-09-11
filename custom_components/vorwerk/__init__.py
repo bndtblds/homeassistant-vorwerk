@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import warnings
 from dataclasses import dataclass
 from typing import Any
-import warnings
 
 with warnings.catch_warnings():
     warnings.filterwarnings(
@@ -18,12 +18,14 @@ with warnings.catch_warnings():
     from pybotvac.vorwerk import Vorwerk
 
 import voluptuous as vol
-
-from homeassistant.components.vacuum import DOMAIN as VACUUM_DOMAIN, VacuumActivity
+from homeassistant.components.vacuum import DOMAIN as VACUUM_DOMAIN
+from homeassistant.components.vacuum import VacuumActivity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import config_validation as cv, entity_registry as er, service
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import service
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.typing import ConfigType
 

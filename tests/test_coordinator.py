@@ -6,10 +6,9 @@ import threading
 from unittest.mock import MagicMock, patch
 
 import pytest
-from pybotvac.exceptions import NeatoException
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
+from pybotvac.exceptions import NeatoException
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.vorwerk import VorwerkRobotState

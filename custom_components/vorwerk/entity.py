@@ -53,7 +53,7 @@ class VorwerkEntity(CoordinatorEntity[VorwerkDataUpdateCoordinator]):
                 translation_key="command_failed",
                 translation_placeholders={"robot": self.robot.name},
             ) from err
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             _LOGGER.error("Vorwerk command failed for %s: %s", self.robot.name, err)
             raise HomeAssistantError(
                 translation_domain=VORWERK_DOMAIN,

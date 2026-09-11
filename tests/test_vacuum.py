@@ -4,7 +4,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-
 from homeassistant.components.vacuum import StateVacuumEntity, VacuumActivity
 
 from custom_components.vorwerk import VorwerkRobotState
@@ -51,6 +50,4 @@ def test_vacuum_unavailable_data(
 
 def test_vacuum_has_no_battery_level(coordinator: MagicMock) -> None:
     """Test that battery data is not duplicated on the vacuum entity."""
-    entity = VorwerkVacuumEntity(coordinator)
-
     assert "battery_level" not in VorwerkVacuumEntity.__dict__

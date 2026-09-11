@@ -3,14 +3,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
-
-from pybotvac.exceptions import NeatoException
+from typing import TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from pybotvac.exceptions import NeatoException
 
 from .const import MIN_TIME_BETWEEN_UPDATES, ROBOT_API_TIMEOUT
+
+if TYPE_CHECKING:
+    from . import VorwerkRobotState
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,7 +25,7 @@ class VorwerkDataUpdateCoordinator(DataUpdateCoordinator["VorwerkRobotState"]):
         self,
         hass: HomeAssistant,
         config_entry: ConfigEntry,
-        robot_state: "VorwerkRobotState",
+        robot_state: VorwerkRobotState,
     ) -> None:
         """Initialize the coordinator."""
         super().__init__(
@@ -35,7 +38,7 @@ class VorwerkDataUpdateCoordinator(DataUpdateCoordinator["VorwerkRobotState"]):
         self.robot_state = robot_state
         self._update_future: asyncio.Future[None] | None = None
 
-    async def _async_update_data(self) -> "VorwerkRobotState":
+    async def _async_update_data(self) -> VorwerkRobotState:
         """Fetch the latest robot data."""
         if self._update_future is not None and not self._update_future.done():
             raise UpdateFailed(

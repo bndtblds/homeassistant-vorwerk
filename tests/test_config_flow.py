@@ -3,12 +3,11 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from pybotvac.exceptions import NeatoException
-
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import CONF_CODE, CONF_EMAIL
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from pybotvac.exceptions import NeatoException
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.vorwerk.const import VORWERK_DOMAIN, VORWERK_ROBOTS

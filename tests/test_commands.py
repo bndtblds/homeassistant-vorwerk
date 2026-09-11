@@ -4,7 +4,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from homeassistant.components.vacuum import VacuumActivity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
