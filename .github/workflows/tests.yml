@@ -12,18 +12,27 @@ permissions:
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - home-assistant: "2026.2.0"
+            python: "3.13"
+            requirements: requirements_test_min.txt
+          - home-assistant: "2026.9.1"
+            python: "3.14.2"
+            requirements: requirements_test.txt
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.14.2"
+          python-version: ${{ matrix.python }}
           cache: pip
-          cache-dependency-path: requirements_test.txt
+          cache-dependency-path: ${{ matrix.requirements }}
 
       - name: Install test dependencies
-        run: python -m pip install -r requirements_test.txt
+        run: python -m pip install -r ${{ matrix.requirements }}
 
       - name: Run tests
         run: >-

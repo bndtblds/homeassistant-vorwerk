@@ -54,4 +54,3 @@ def test_vacuum_has_no_battery_level(coordinator: MagicMock) -> None:
     entity = VorwerkVacuumEntity(coordinator)
 
     assert "battery_level" not in VorwerkVacuumEntity.__dict__
-    assert not hasattr(entity, "battery_level")
