@@ -6,6 +6,7 @@ import logging
 
 from pybotvac.exceptions import NeatoException
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -17,13 +18,19 @@ _LOGGER = logging.getLogger(__name__)
 class VorwerkDataUpdateCoordinator(DataUpdateCoordinator["VorwerkRobotState"]):
     """Coordinate updates for a single Vorwerk robot."""
 
-    def __init__(self, hass: HomeAssistant, robot_state: "VorwerkRobotState") -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        config_entry: ConfigEntry,
+        robot_state: "VorwerkRobotState",
+    ) -> None:
         """Initialize the coordinator."""
         super().__init__(
             hass,
             logger=_LOGGER,
             name=f"vorwerk_{robot_state.robot.serial}",
             update_interval=MIN_TIME_BETWEEN_UPDATES,
+            config_entry=config_entry,
         )
         self.robot_state = robot_state
         self._update_future: asyncio.Future[None] | None = None

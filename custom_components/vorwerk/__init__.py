@@ -112,7 +112,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: VorwerkConfigEntry) -> b
         runtime_robots.append(
             VorwerkRobotRuntime(
                 state=robot_state,
-                coordinator=VorwerkDataUpdateCoordinator(hass, robot_state=robot_state),
+                coordinator=VorwerkDataUpdateCoordinator(
+                    hass,
+                    config_entry=entry,
+                    robot_state=robot_state,
+                ),
             )
         )
 
