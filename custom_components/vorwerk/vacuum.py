@@ -23,16 +23,6 @@ _LOGGER = logging.getLogger(__name__)
 ATTR_STATUS = "status"
 PARALLEL_UPDATES = 1
 
-ACTIVITY_TO_STATE = {
-    VacuumActivity.DOCKED: "docked",
-    VacuumActivity.IDLE: "idle",
-    VacuumActivity.CLEANING: "cleaning",
-    VacuumActivity.PAUSED: "paused",
-    VacuumActivity.RETURNING: "returning",
-    VacuumActivity.ERROR: "error",
-}
-
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: VorwerkConfigEntry,
@@ -74,14 +64,6 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
     def activity(self) -> VacuumActivity | None:
         """Return the current vacuum activity."""
         return self.robot_state.activity
-
-    @property
-    def state(self) -> str | None:
-        """Return the legacy string state for the vacuum entity."""
-        activity = self.activity
-        if activity is None:
-            return None
-        return ACTIVITY_TO_STATE.get(activity)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -200,7 +182,7 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
                 translation_key="load_map_boundaries_failed",
                 translation_placeholders={"robot": self.robot.name},
             ) from err
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             _LOGGER.warning(
                 "Unable to load map boundaries for %s: %s",
                 self.robot.name,

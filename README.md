@@ -16,13 +16,13 @@ This custom integration restores Vorwerk Kobold support that is no longer availa
 
 ## Compatibility
 
-- Integration version: `0.9.10`
-- Targeted at current Home Assistant `2026.x` releases
+- Integration version: `2026.9.0`
+- Supports Home Assistant `2026.2.0` and newer `2026.x` releases; automated tests cover `2026.2.0` and `2026.9.1`
 - Currently pinned to `pybotvac==0.0.28` so installs stay reproducible and future `pybotvac` releases are only adopted after explicit verification
 
 ## Versioning
 
-- The project is preparing to use calendar versioning in the format `YYYY.M.N`.
+- The project uses calendar versioning in the format `YYYY.M.N`.
 - `YYYY` is the release year, `M` is the release month, and `N` is the release sequence within that month.
 - `N` is not a semantic-versioning patch number.
 - Example: `2026.4.0` is the first release in April 2026, while `2026.4.1` is the second release in April 2026.
@@ -109,7 +109,7 @@ data:
 ## Troubleshooting
 
 - The login uses the Vorwerk cloud account from the MyKobold app, not the Vorwerk shop account.
-- Existing installations upgraded to `0.9.10` may keep older entity display names from the Home Assistant entity registry.
+- Existing installations upgraded from older releases may keep legacy entity display names from the Home Assistant entity registry.
 - Battery and schedule entities use translated names such as `Batterie` and `Zeitplan` on a clean setup.
 - If older entity names persist after upgrading, remove the integration, restart Home Assistant, and set it up again so the current default entity names can be created cleanly.
 - If zone cleaning is unavailable, verify that persistent maps and named boundaries exist in the Vorwerk app and that the robot exposes them through the cloud API.
@@ -117,7 +117,7 @@ data:
 
 ## Support policy
 
-- `0.9.10` is focused on Home Assistant `2026.x` and no longer claims compatibility with older `2024.x` or `2025.x` releases.
+- The current release requires Home Assistant `2026.2.0` or newer and does not support older `2024.x` or `2025.x` releases.
 - Legacy YAML configuration is no longer supported; setup is handled exclusively through the UI config flow.
 
 ## Changelog

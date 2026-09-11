@@ -7,14 +7,35 @@ This project follows a simplified version of the guidelines from
 
 ## [Unreleased]
 
+## [2026.9.0] - 2026-09-11
+
+### Added
+- Added automated integration tests for config entry setup and unloading, config flow, coordinator updates, robot commands, custom cleaning, entity registry migrations, vacuum state, and battery and schedule entities.
+- Added a test workflow for pull requests and pushes to `main` with a minimum coverage requirement of 95%.
+- Added an automated release workflow that verifies tag and manifest versions, runs the test suite, HACS validation, and Hassfest before publishing a GitHub release.
+
 ### Changed
 - Moved map boundary loading for zone cleaning into Home Assistant's executor to avoid blocking the event loop.
-- Raised translated Home Assistant service errors when custom cleaning cannot load boundaries, cannot find a requested zone, or a robot command fails.
 - Let the data update coordinator handle robot update failures through `UpdateFailed` so entity availability follows Home Assistant coordinator state.
 - Documented the polling interval and known integration limitations.
 - Moved the schedule switch icon to Home Assistant icon translations and normalized device manufacturer metadata.
 - Clarified the `pybotvac` pinning rationale and reorganized the README into a more standard user-facing structure.
-- Documented the planned move to calendar versioning in the format `YYYY.M.N`, where `N` is the release sequence within the month.
+- Activated calendar versioning in the format `YYYY.M.N`, where `N` is the release sequence within the month.
+
+### Fixed
+- Removed the legacy vacuum `state` override so Home Assistant derives the state from `VacuumActivity` as required by Home Assistant 2026.9.
+- Associated each data update coordinator with its config entry so initial refreshes use the current Home Assistant lifecycle API.
+- Prevented delayed executor failures after an update timeout from producing an unconsumed shielded-future exception.
+- Raised translated Home Assistant service errors when custom cleaning cannot load boundaries, cannot find a requested zone, or a robot command fails.
+
+### Compatibility
+- Validated the integration against Home Assistant `2026.2.0` and `2026.9.1`.
+- Kept the minimum supported Home Assistant version at `2026.2.0`.
+- Kept `pybotvac==0.0.28` deliberately pinned and added the compatible Setuptools runtime needed by its deprecated `pkg_resources` import to the test environments.
+
+### Testing
+- Added 76 automated tests with 99% measured integration coverage.
+- Added regression coverage for all supported vacuum activities, blocking executor calls, timeouts, late failures, entity targeting, named zones, OTP handling, and legacy registry entries.
 
 ## [0.9.10] - 2026-03-27
 
