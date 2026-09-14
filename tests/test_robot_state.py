@@ -4,6 +4,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
+from homeassistant.components.vacuum import VacuumActivity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from pybotvac.exceptions import NeatoException, NeatoRobotException
@@ -14,6 +15,10 @@ from custom_components.vorwerk import (
     VorwerkRobotState,
     VorwerkRuntimeData,
     _async_create_robots,
+)
+from custom_components.vorwerk.const import (
+    ROBOT_ACTION_SUSPENDED_CLEANING,
+    ROBOT_STATE_BUSY,
 )
 from custom_components.vorwerk.coordinator import VorwerkDataUpdateCoordinator
 from custom_components.vorwerk.sensor import async_setup_entry as setup_sensor
@@ -181,6 +186,30 @@ def test_vacuum_status_attribute(
     assert entity.extra_state_attributes == {}
     robot_state.robot_state = {"state": 3, "details": {}}
     assert entity.extra_state_attributes == {"status": "Paused"}
+
+
+@pytest.mark.parametrize("charge", [1, 99])
+def test_vr200_suspended_cleaning_status_is_independent_of_charge(
+    coordinator: MagicMock,
+    robot_state: VorwerkRobotState,
+    charge: int,
+) -> None:
+    """Test the observed VR200 suspended-cleaning state and detail status."""
+    robot_state.robot.serial = "VR200-1234"
+    robot_state.robot_state = {
+        "state": ROBOT_STATE_BUSY,
+        "action": ROBOT_ACTION_SUSPENDED_CLEANING,
+        "cleaning": {"mode": 2},
+        "details": {
+            "charge": charge,
+            "isDocked": False,
+            "isCharging": False,
+        },
+    }
+    entity = VorwerkVacuumEntity(coordinator)
+
+    assert entity.activity is VacuumActivity.PAUSED
+    assert entity.extra_state_attributes == {"status": "Turbo Suspended Cleaning"}
 
 
 async def test_create_robot_error(

@@ -35,11 +35,12 @@ from .const import (
     DEFAULT_ENDPOINT,
     ERRORS,
     MODE,
-    ROBOT_CLEANING_ACTIONS,
+    ROBOT_ACTIVE_CLEANING_ACTIONS,
     ROBOT_STATE_BUSY,
     ROBOT_STATE_ERROR,
     ROBOT_STATE_IDLE,
     ROBOT_STATE_PAUSE,
+    ROBOT_SUSPENDED_ACTIONS,
     SERVICE_CUSTOM_CLEANING,
     VORWERK_DOMAIN,
     VORWERK_PLATFORMS,
@@ -349,11 +350,12 @@ class VorwerkRobotState:
         if state == ROBOT_STATE_IDLE:
             return VacuumActivity.IDLE
         if state == ROBOT_STATE_BUSY:
-            return (
-                VacuumActivity.CLEANING
-                if self.robot_state.get("action") in ROBOT_CLEANING_ACTIONS
-                else VacuumActivity.RETURNING
-            )
+            action = self.robot_state.get("action")
+            if action in ROBOT_ACTIVE_CLEANING_ACTIONS:
+                return VacuumActivity.CLEANING
+            if action in ROBOT_SUSPENDED_ACTIONS:
+                return VacuumActivity.PAUSED
+            return VacuumActivity.RETURNING
         if state == ROBOT_STATE_PAUSE:
             return VacuumActivity.PAUSED
         if state == ROBOT_STATE_ERROR:
@@ -414,6 +416,8 @@ class VorwerkRobotState:
         if activity == VacuumActivity.CLEANING:
             return self._cleaning_status()
         if activity == VacuumActivity.PAUSED:
+            if self.robot_state.get("action") in ROBOT_SUSPENDED_ACTIONS:
+                return self._cleaning_status()
             return "Paused"
         if activity == VacuumActivity.RETURNING:
             return "Returning"

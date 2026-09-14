@@ -7,18 +7,101 @@ import pytest
 from homeassistant.components.vacuum import StateVacuumEntity, VacuumActivity
 
 from custom_components.vorwerk import VorwerkRobotState
+from custom_components.vorwerk.const import (
+    ROBOT_ACTION_DOCKING,
+    ROBOT_ACTION_EXPLORING_MAP,
+    ROBOT_ACTION_HOUSE_CLEANING,
+    ROBOT_ACTION_MANUAL_CLEANING,
+    ROBOT_ACTION_MAP_CLEANING,
+    ROBOT_ACTION_SPOT_CLEANING,
+    ROBOT_ACTION_SUSPENDED_CLEANING,
+    ROBOT_ACTION_SUSPENDED_EXPLORATION,
+    ROBOT_STATE_BUSY,
+    ROBOT_STATE_ERROR,
+    ROBOT_STATE_IDLE,
+    ROBOT_STATE_PAUSE,
+)
 from custom_components.vorwerk.vacuum import VorwerkVacuumEntity
 
 
 @pytest.mark.parametrize(
     ("state", "expected_activity"),
     [
-        ({"state": 1, "details": {"isDocked": True}}, VacuumActivity.DOCKED),
-        ({"state": 1, "details": {}}, VacuumActivity.IDLE),
-        ({"state": 2, "action": 1, "details": {}}, VacuumActivity.CLEANING),
-        ({"state": 3, "details": {}}, VacuumActivity.PAUSED),
-        ({"state": 2, "action": 4, "details": {}}, VacuumActivity.RETURNING),
-        ({"state": 4, "details": {}}, VacuumActivity.ERROR),
+        (
+            {"state": ROBOT_STATE_IDLE, "details": {"isDocked": True}},
+            VacuumActivity.DOCKED,
+        ),
+        (
+            {"state": ROBOT_STATE_IDLE, "details": {"isCharging": True}},
+            VacuumActivity.DOCKED,
+        ),
+        ({"state": ROBOT_STATE_IDLE, "details": {}}, VacuumActivity.IDLE),
+        (
+            {
+                "state": ROBOT_STATE_BUSY,
+                "action": ROBOT_ACTION_HOUSE_CLEANING,
+                "details": {},
+            },
+            VacuumActivity.CLEANING,
+        ),
+        (
+            {
+                "state": ROBOT_STATE_BUSY,
+                "action": ROBOT_ACTION_SPOT_CLEANING,
+                "details": {},
+            },
+            VacuumActivity.CLEANING,
+        ),
+        (
+            {
+                "state": ROBOT_STATE_BUSY,
+                "action": ROBOT_ACTION_MANUAL_CLEANING,
+                "details": {},
+            },
+            VacuumActivity.CLEANING,
+        ),
+        (
+            {
+                "state": ROBOT_STATE_BUSY,
+                "action": ROBOT_ACTION_MAP_CLEANING,
+                "details": {},
+            },
+            VacuumActivity.CLEANING,
+        ),
+        (
+            {
+                "state": ROBOT_STATE_BUSY,
+                "action": ROBOT_ACTION_EXPLORING_MAP,
+                "details": {},
+            },
+            VacuumActivity.CLEANING,
+        ),
+        (
+            {
+                "state": ROBOT_STATE_BUSY,
+                "action": ROBOT_ACTION_SUSPENDED_CLEANING,
+                "details": {},
+            },
+            VacuumActivity.PAUSED,
+        ),
+        (
+            {
+                "state": ROBOT_STATE_BUSY,
+                "action": ROBOT_ACTION_SUSPENDED_EXPLORATION,
+                "details": {},
+            },
+            VacuumActivity.PAUSED,
+        ),
+        (
+            {
+                "state": ROBOT_STATE_BUSY,
+                "action": ROBOT_ACTION_DOCKING,
+                "details": {},
+            },
+            VacuumActivity.RETURNING,
+        ),
+        ({"state": ROBOT_STATE_PAUSE, "details": {}}, VacuumActivity.PAUSED),
+        ({"state": ROBOT_STATE_ERROR, "details": {}}, VacuumActivity.ERROR),
     ],
 )
 def test_vacuum_activity_and_state(
