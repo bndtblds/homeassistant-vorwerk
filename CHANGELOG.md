@@ -7,6 +7,15 @@ This project follows a simplified version of the guidelines from
 
 ## [Unreleased]
 
+## [2026.9.1] - 2026-09-14
+
+### Changed
+- Reworked the README as concise user documentation with installation from the default HACS store, setup and operation guidance, troubleshooting, and a clear distinction from the similarly named Kobold integration.
+
+### Fixed
+- Corrected the historical mapping of suspended vacuum actions. Suspended Cleaning and Suspended Exploration are now reported to Home Assistant as `paused` instead of active cleaning, based on the action value supplied by the Vorwerk cloud.
+- Preserved detailed Vorwerk status information such as `Turbo Suspended Cleaning` for suspended operations.
+
 ## [2026.9.0] - 2026-09-11
 
 ### Added
