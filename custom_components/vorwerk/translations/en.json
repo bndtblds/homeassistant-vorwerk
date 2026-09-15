@@ -17,7 +17,7 @@
       },
       "reconfigure": {
         "title": "Renew Vorwerk authentication",
-        "description": "Renew authentication for the configured Vorwerk account {email}. The email address cannot be changed in this flow. After confirmation, Vorwerk will send a one-time code to {email}. To use another account, add a new integration."
+        "description": "Renew Vorwerk authentication for {email}. After confirmation, Vorwerk will send a new one-time code to this address."
       },
       "reconfigure_code": {
         "title": "Renew Vorwerk authentication",

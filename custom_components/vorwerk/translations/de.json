@@ -17,7 +17,7 @@
       },
       "reconfigure": {
         "title": "Vorwerk-Anmeldung erneuern",
-        "description": "Erneuert die Anmeldung für das bereits konfigurierte Vorwerk-Konto {email}. Die E-Mail-Adresse kann dabei nicht geändert werden. Nach der Bestätigung sendet Vorwerk einen Einmalcode an {email}. Für ein anderes Konto muss eine neue Integration eingerichtet werden."
+        "description": "Erneuert die Vorwerk-Anmeldung für {email}. Nach der Bestätigung sendet Vorwerk einen neuen Einmalcode an diese Adresse."
       },
       "reconfigure_code": {
         "title": "Vorwerk-Anmeldung erneuern",

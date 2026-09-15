@@ -17,7 +17,7 @@
       },
       "reconfigure": {
         "title": "Renouveler l’authentification Vorwerk",
-        "description": "Renouvelez l’authentification du compte Vorwerk configuré {email}. L’adresse e-mail ne peut pas être modifiée dans ce processus. Après confirmation, Vorwerk enverra un code à usage unique à {email}. Pour utiliser un autre compte, ajoutez une nouvelle intégration."
+        "description": "Renouvelez l’authentification Vorwerk pour {email}. Après confirmation, Vorwerk enverra un nouveau code à usage unique à cette adresse."
       },
       "reconfigure_code": {
         "title": "Renouveler l’authentification Vorwerk",
