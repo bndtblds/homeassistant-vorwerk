@@ -7,6 +7,12 @@ This project follows a simplified version of the guidelines from
 
 ## [Unreleased]
 
+### Changed
+- Added operation-level timing diagnostics for blocking robot setup, polling, commands, and map-boundary requests without exposing complete robot serial numbers.
+
+### Fixed
+- Prevented config entry reloads from starting another polling job for a robot while its previous blocking update is still running.
+
 ## [2026.9.1] - 2026-09-14
 
 ### Changed
