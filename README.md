@@ -18,7 +18,7 @@ Local-only control is not supported.
 The integration is included in the default HACS store and does not need to be added as a custom repository.
 
 > [!IMPORTANT]
-> HACS can show two integrations named **Vorwerk Kobold**. Select the entry described as **Home Assistant cloud integration for Vorwerk Kobold VR200 and VR300 vacuums (domain: vorwerk)**. Its repository is `bndtblds/homeassistant-vorwerk`. The entry described only as **Home Assistant integration for Vorwerk Kobold robot vacuums** belongs to the separate `FReichelt/ha-vorwerk-kobold` project.
+> HACS can show two integrations named **Vorwerk Kobold**. Select the entry described as **Home Assistant cloud integration for Vorwerk Kobold VR200 and VR300 vacuums (domain: vorwerk)**.
 
 1. Open **HACS → Integrations**.
 2. Search for **Vorwerk Kobold** and select the entry whose description explicitly mentions **VR200 and VR300**.
@@ -113,4 +113,6 @@ Before opening a [GitHub issue](https://github.com/bndtblds/homeassistant-vorwer
 
 ## Credits and license
 
-This integration is a maintained fork of [`trunneml/homeassistant-vorwerk`](https://github.com/trunneml/homeassistant-vorwerk) and is licensed under the [Apache License 2.0](./LICENSE).
+This integration is a maintained fork of [`trunneml/homeassistant-vorwerk`](https://github.com/trunneml/homeassistant-vorwerk), which was originally based on Home Assistant's Neato integration and adapted for the Vorwerk authentication flow.
+
+The project is licensed under the [Apache License 2.0](./LICENSE).
