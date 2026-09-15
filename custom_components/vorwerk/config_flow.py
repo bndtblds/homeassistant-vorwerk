@@ -17,7 +17,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_CODE, CONF_EMAIL
 from homeassistant.data_entry_flow import FlowResult
-from requests import HTTPError
+from requests import HTTPError, RequestException
 
 from .const import (
     VORWERK_CLIENT_ID,
@@ -34,6 +34,7 @@ DOCUMENTATION_URL = "https://github.com/bndtblds/homeassistant-vorwerk"
 
 STEP_USER_SCHEMA = vol.Schema({vol.Required(CONF_EMAIL): str})
 STEP_CODE_SCHEMA = vol.Schema({vol.Required(CONF_CODE): str})
+STEP_CONFIRM_SCHEMA = vol.Schema({})
 
 
 class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
@@ -97,9 +98,97 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
             errors=errors,
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Confirm renewal of authentication for an existing account."""
+        entry = self._get_reconfigure_entry()
+        self._email = entry.data[CONF_EMAIL]
+        await self.async_set_unique_id(self._email)
+        self._abort_if_unique_id_mismatch()
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                await self.hass.async_add_executor_job(
+                    self._session.send_email_otp,
+                    self._email,
+                )
+            except (NeatoException, RequestException):
+                errors["base"] = "otp_request_failed"
+            else:
+                return await self.async_step_reconfigure_code()
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=STEP_CONFIRM_SCHEMA,
+            description_placeholders={"email": self._email},
+            errors=errors,
+        )
+
+    async def async_step_reconfigure_code(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Authenticate and update an existing config entry."""
+        entry = self._get_reconfigure_entry()
+        email = entry.data[CONF_EMAIL]
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            code = user_input[CONF_CODE].strip()
+            try:
+                await self.hass.async_add_executor_job(
+                    self._session.fetch_token_passwordless,
+                    email,
+                    code,
+                )
+            except (HTTPError, NeatoException):
+                errors["base"] = "invalid_auth"
+            except RequestException:
+                errors["base"] = "cannot_connect"
+            else:
+                try:
+                    robots = await self.hass.async_add_executor_job(
+                        self._fetch_authenticated_robots
+                    )
+                except (NeatoException, RequestException):
+                    errors["base"] = "robots_unavailable"
+                else:
+                    existing_serials = {
+                        robot[VORWERK_ROBOT_SERIAL]
+                        for robot in entry.data[VORWERK_ROBOTS]
+                    }
+                    refreshed_serials = {
+                        robot[VORWERK_ROBOT_SERIAL] for robot in robots
+                    }
+                    if not robots:
+                        errors["base"] = "no_robots"
+                    elif not existing_serials & refreshed_serials:
+                        errors["base"] = "account_mismatch"
+                    else:
+                        return self.async_update_reload_and_abort(
+                            entry,
+                            data={
+                                **entry.data,
+                                CONF_EMAIL: email,
+                                VORWERK_ROBOTS: robots,
+                            },
+                        )
+
+        return self.async_show_form(
+            step_id="reconfigure_code",
+            data_schema=STEP_CODE_SCHEMA,
+            description_placeholders={"email": email},
+            errors=errors,
+        )
+
     def _fetch_robots(self, email: str, code: str) -> list[dict[str, Any]]:
         """Fetch robots available for the authenticated account."""
         self._session.fetch_token_passwordless(email, code)
+        return self._fetch_authenticated_robots()
+
+    def _fetch_authenticated_robots(self) -> list[dict[str, Any]]:
+        """Fetch robots using the authenticated session."""
         return [
             {
                 VORWERK_ROBOT_NAME: robot["name"],

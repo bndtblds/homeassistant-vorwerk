@@ -85,7 +85,9 @@ Restart Home Assistant. If it is still missing under **Add integration**, redown
 
 Use the email address from the MyKobold app, check the spam folder, and request a new code. Only the most recent code may be valid.
 
-Automatic reauthentication is not available. If saved credentials are rejected, remove the integration under **Settings → Devices & services** and add it again. Entity IDs can change during setup, so review affected automations, scripts, and dashboards afterward.
+To renew authentication, open the configured Vorwerk integration under **Settings → Devices & services**, select **Configure**, confirm **Renew Vorwerk authentication**, and enter the one-time code sent by Vorwerk. The configured email address cannot be changed in this flow; add a new integration to use another Vorwerk account.
+
+Authentication renewal is started only by the user. Home Assistant does not automatically request one-time codes after API, polling, or timeout errors.
 
 ### The robot is unavailable
 

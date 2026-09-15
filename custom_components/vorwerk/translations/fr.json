@@ -14,13 +14,30 @@
           "code": "Code"
         },
         "description": "Saisissez le code reçu par e-mail.\n\nVoir la [documentation]({docs_url})."
+      },
+      "reconfigure": {
+        "title": "Renouveler l’authentification Vorwerk",
+        "description": "Renouvelez l’authentification du compte Vorwerk configuré {email}. L’adresse e-mail ne peut pas être modifiée dans ce processus. Après confirmation, Vorwerk enverra un code à usage unique à {email}. Pour utiliser un autre compte, ajoutez une nouvelle intégration."
+      },
+      "reconfigure_code": {
+        "title": "Renouveler l’authentification Vorwerk",
+        "data": {
+          "code": "Code"
+        },
+        "description": "Saisissez le code à usage unique envoyé par Vorwerk à {email}."
       }
     },
     "error": {
-      "invalid_auth": "Authentification invalide"
+      "invalid_auth": "Authentification invalide",
+      "otp_request_failed": "Impossible de demander un code à usage unique à Vorwerk.",
+      "cannot_connect": "Connexion impossible",
+      "robots_unavailable": "Impossible de charger les informations des robots depuis Vorwerk.",
+      "no_robots": "Aucun robot n’a été trouvé pour ce compte Vorwerk.",
+      "account_mismatch": "Le compte authentifié ne correspond pas au compte Vorwerk configuré. Aucune modification n’a été enregistrée."
     },
     "abort": {
-      "already_configured": "Ce compte est déjà configuré"
+      "already_configured": "Ce compte est déjà configuré",
+      "unique_id_mismatch": "Le compte Vorwerk configuré ne correspond pas à cette entrée."
     }
   },
   "services": {
