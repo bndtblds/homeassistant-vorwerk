@@ -1,16 +1,26 @@
 """Tests for the Vorwerk config flow."""
 from __future__ import annotations
 
+from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
-from homeassistant.config_entries import SOURCE_USER
+import pytest
+from homeassistant.config_entries import SOURCE_RECONFIGURE, SOURCE_USER
 from homeassistant.const import CONF_CODE, CONF_EMAIL
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from pybotvac.exceptions import NeatoException
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.vorwerk.const import VORWERK_DOMAIN, VORWERK_ROBOTS
+from custom_components.vorwerk.const import (
+    VORWERK_DOMAIN,
+    VORWERK_ROBOT_ENDPOINT,
+    VORWERK_ROBOT_NAME,
+    VORWERK_ROBOT_SECRET,
+    VORWERK_ROBOT_SERIAL,
+    VORWERK_ROBOT_TRAITS,
+    VORWERK_ROBOTS,
+)
 
 
 async def test_user_step(hass: HomeAssistant) -> None:
@@ -162,3 +172,249 @@ def test_fetch_robots_maps_cloud_response() -> None:
     flow._session.fetch_token_passwordless.assert_called_once_with(
         "owner@example.com", "123456"
     )
+
+
+async def test_reconfigure_requires_confirmation_and_sends_one_otp(
+    hass: HomeAssistant, config_entry: MockConfigEntry
+) -> None:
+    """Test that reconfiguration fixes the email and explicitly requests one OTP."""
+    config_entry.add_to_hass(hass)
+
+    with patch(
+        "custom_components.vorwerk.config_flow.VorwerkSession.send_email_otp"
+    ) as send_otp:
+        confirm_form = await hass.config_entries.flow.async_init(
+            VORWERK_DOMAIN,
+            context={
+                "source": SOURCE_RECONFIGURE,
+                "entry_id": config_entry.entry_id,
+            },
+        )
+
+        assert confirm_form["type"] is FlowResultType.FORM
+        assert confirm_form["step_id"] == "reconfigure"
+        assert confirm_form["description_placeholders"] == {
+            "email": "owner@example.com"
+        }
+        assert list(confirm_form["data_schema"].schema) == []
+        send_otp.assert_not_called()
+
+        code_form = await hass.config_entries.flow.async_configure(
+            confirm_form["flow_id"], {}
+        )
+
+        assert code_form["type"] is FlowResultType.FORM
+        assert code_form["step_id"] == "reconfigure_code"
+        assert list(code_form["data_schema"].schema) == [CONF_CODE]
+        send_otp.assert_called_once_with("owner@example.com")
+
+        shown_again = await hass.config_entries.flow.async_configure(
+            code_form["flow_id"]
+        )
+
+    assert shown_again["step_id"] == "reconfigure_code"
+    send_otp.assert_called_once_with("owner@example.com")
+
+
+async def test_reconfigure_invalid_code_can_be_retried_without_new_otp(
+    hass: HomeAssistant, config_entry: MockConfigEntry
+) -> None:
+    """Test retrying an invalid code without modifying data or resending OTP."""
+    config_entry.add_to_hass(hass)
+    original_data = deepcopy(dict(config_entry.data))
+
+    with (
+        patch(
+            "custom_components.vorwerk.config_flow.VorwerkSession.send_email_otp"
+        ) as send_otp,
+        patch(
+            "custom_components.vorwerk.config_flow.VorwerkSession.fetch_token_passwordless",
+            side_effect=[NeatoException("expired"), None],
+        ) as fetch_token,
+        patch(
+            "custom_components.vorwerk.config_flow.VorwerkConfigFlow._fetch_authenticated_robots",
+            return_value=list(config_entry.data[VORWERK_ROBOTS]),
+        ),
+        patch.object(hass.config_entries, "async_schedule_reload") as reload_entry,
+    ):
+        confirm_form = await hass.config_entries.flow.async_init(
+            VORWERK_DOMAIN,
+            context={
+                "source": SOURCE_RECONFIGURE,
+                "entry_id": config_entry.entry_id,
+            },
+        )
+        code_form = await hass.config_entries.flow.async_configure(
+            confirm_form["flow_id"], {}
+        )
+        invalid_result = await hass.config_entries.flow.async_configure(
+            code_form["flow_id"], {CONF_CODE: "expired"}
+        )
+
+        assert invalid_result["type"] is FlowResultType.FORM
+        assert invalid_result["errors"] == {"base": "invalid_auth"}
+        assert dict(config_entry.data) == original_data
+        reload_entry.assert_not_called()
+
+        result = await hass.config_entries.flow.async_configure(
+            invalid_result["flow_id"], {CONF_CODE: "new-code"}
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert fetch_token.call_args_list[0].args == ("owner@example.com", "expired")
+    assert fetch_token.call_args_list[1].args == ("owner@example.com", "new-code")
+    send_otp.assert_called_once_with("owner@example.com")
+    reload_entry.assert_called_once_with(config_entry.entry_id)
+
+
+async def test_successful_reconfigure_updates_existing_entry(
+    hass: HomeAssistant, config_entry: MockConfigEntry
+) -> None:
+    """Test replacing robot information and reloading the existing entry once."""
+    config_entry.add_to_hass(hass)
+    refreshed_robots = [
+        {
+            VORWERK_ROBOT_NAME: "Renamed upstairs",
+            VORWERK_ROBOT_SERIAL: "VR300-1234",
+            VORWERK_ROBOT_SECRET: "renewed-secret",
+            VORWERK_ROBOT_TRAITS: ["maps", "zones"],
+            VORWERK_ROBOT_ENDPOINT: "https://renewed.invalid",
+        },
+        {
+            VORWERK_ROBOT_NAME: "New robot",
+            VORWERK_ROBOT_SERIAL: "VR200-5678",
+            VORWERK_ROBOT_SECRET: "new-secret",
+            VORWERK_ROBOT_TRAITS: [],
+            VORWERK_ROBOT_ENDPOINT: "https://new.invalid",
+        },
+    ]
+
+    with (
+        patch(
+            "custom_components.vorwerk.config_flow.VorwerkSession.send_email_otp"
+        ),
+        patch(
+            "custom_components.vorwerk.config_flow.VorwerkSession.fetch_token_passwordless"
+        ) as fetch_token,
+        patch(
+            "custom_components.vorwerk.config_flow.VorwerkConfigFlow._fetch_authenticated_robots",
+            return_value=refreshed_robots,
+        ) as fetch_robots,
+        patch.object(hass.config_entries, "async_schedule_reload") as reload_entry,
+    ):
+        confirm_form = await hass.config_entries.flow.async_init(
+            VORWERK_DOMAIN,
+            context={
+                "source": SOURCE_RECONFIGURE,
+                "entry_id": config_entry.entry_id,
+            },
+        )
+        code_form = await hass.config_entries.flow.async_configure(
+            confirm_form["flow_id"], {}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            code_form["flow_id"], {CONF_CODE: " 123456 "}
+        )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert len(hass.config_entries.async_entries(VORWERK_DOMAIN)) == 1
+    assert config_entry.unique_id == "owner@example.com"
+    assert config_entry.data[CONF_EMAIL] == "owner@example.com"
+    assert config_entry.data[VORWERK_ROBOTS] == refreshed_robots
+    assert CONF_CODE not in config_entry.data
+    assert "token" not in config_entry.data
+    fetch_token.assert_called_once_with("owner@example.com", "123456")
+    fetch_robots.assert_called_once_with()
+    reload_entry.assert_called_once_with(config_entry.entry_id)
+
+
+async def test_reconfigure_otp_request_failure_preserves_entry(
+    hass: HomeAssistant, config_entry: MockConfigEntry
+) -> None:
+    """Test that an OTP request failure leaves the entry unchanged."""
+    config_entry.add_to_hass(hass)
+    original_data = deepcopy(dict(config_entry.data))
+
+    with patch(
+        "custom_components.vorwerk.config_flow.VorwerkSession.send_email_otp",
+        side_effect=NeatoException("unavailable"),
+    ) as send_otp:
+        confirm_form = await hass.config_entries.flow.async_init(
+            VORWERK_DOMAIN,
+            context={
+                "source": SOURCE_RECONFIGURE,
+                "entry_id": config_entry.entry_id,
+            },
+        )
+        result = await hass.config_entries.flow.async_configure(
+            confirm_form["flow_id"], {}
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    assert result["errors"] == {"base": "otp_request_failed"}
+    assert dict(config_entry.data) == original_data
+    send_otp.assert_called_once_with("owner@example.com")
+
+
+@pytest.mark.parametrize(
+    ("robots", "expected_error"),
+    [
+        ([], "no_robots"),
+        (
+            [
+                {
+                    VORWERK_ROBOT_NAME: "Someone else's robot",
+                    VORWERK_ROBOT_SERIAL: "UNRELATED-1",
+                    VORWERK_ROBOT_SECRET: "other-secret",
+                    VORWERK_ROBOT_TRAITS: [],
+                    VORWERK_ROBOT_ENDPOINT: "https://other.invalid",
+                }
+            ],
+            "account_mismatch",
+        ),
+    ],
+)
+async def test_reconfigure_rejects_unrelated_or_empty_robot_results(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    robots: list[dict[str, object]],
+    expected_error: str,
+) -> None:
+    """Test that missing matching robots cannot replace the existing entry."""
+    config_entry.add_to_hass(hass)
+    original_data = deepcopy(dict(config_entry.data))
+
+    with (
+        patch(
+            "custom_components.vorwerk.config_flow.VorwerkSession.send_email_otp"
+        ),
+        patch(
+            "custom_components.vorwerk.config_flow.VorwerkSession.fetch_token_passwordless"
+        ),
+        patch(
+            "custom_components.vorwerk.config_flow.VorwerkConfigFlow._fetch_authenticated_robots",
+            return_value=robots,
+        ),
+        patch.object(hass.config_entries, "async_schedule_reload") as reload_entry,
+    ):
+        confirm_form = await hass.config_entries.flow.async_init(
+            VORWERK_DOMAIN,
+            context={
+                "source": SOURCE_RECONFIGURE,
+                "entry_id": config_entry.entry_id,
+            },
+        )
+        code_form = await hass.config_entries.flow.async_configure(
+            confirm_form["flow_id"], {}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            code_form["flow_id"], {CONF_CODE: "123456"}
+        )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": expected_error}
+    assert dict(config_entry.data) == original_data
+    reload_entry.assert_not_called()

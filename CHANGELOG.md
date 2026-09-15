@@ -7,6 +7,9 @@ This project follows a simplified version of the guidelines from
 
 ## [Unreleased]
 
+### Added
+- Added a user-initiated flow to renew authentication for the configured Vorwerk account using an email one-time code.
+
 ## [2026.9.1] - 2026-09-14
 
 ### Changed
