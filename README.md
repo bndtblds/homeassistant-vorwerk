@@ -38,6 +38,8 @@ The login uses the MyKobold account, not a Vorwerk online-shop account. Home Ass
 | Battery sensor | Battery charge in percent |
 | Schedule switch | Enable or disable the schedule stored on the robot |
 
+The standard **Spot clean** action cleans a 2 × 2 m area once in Turbo mode.
+
 ## Vacuum states and status
 
 | State | Meaning |

@@ -7,6 +7,9 @@ This project follows a simplified version of the guidelines from
 
 ## [Unreleased]
 
+### Fixed
+- Changed the standard spot-cleaning action to clean a 2 × 2 m area once in Turbo mode instead of inheriting pybotvac's 4 × 4 m, twice-cleaning defaults.
+
 ## [2026.9.1] - 2026-09-14
 
 ### Changed
