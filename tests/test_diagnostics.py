@@ -9,6 +9,7 @@ import pytest
 from custom_components.vorwerk.diagnostics import (
     masked_robot_serial,
     robot_log_id,
+    timed_cloud_call,
     timed_robot_call,
 )
 
@@ -64,6 +65,41 @@ def test_timed_robot_call_logs_failure(
         timed_robot_call(logger, robot, "get_robot_state", call)
 
     assert (
-        "Vorwerk get_robot_state failed for Upstairs (***1234) after 3.0 seconds"
+        "Vorwerk get_robot_state for Upstairs (***1234) failed after 3.0 seconds"
         in caplog.text
     )
+
+
+def test_timed_cloud_call_logs_http_status_without_sensitive_data(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test safe HTTP failure metadata without arguments or response content."""
+    logger = logging.getLogger("test.vorwerk.auth_diagnostics")
+    response = MagicMock(status_code=403)
+    error = RuntimeError("secret response body")
+    error.response = response
+    call = MagicMock(side_effect=error)
+
+    with (
+        caplog.at_level(logging.DEBUG, logger=logger.name),
+        patch(
+            "custom_components.vorwerk.diagnostics.monotonic",
+            side_effect=[30.0, 31.5],
+        ),
+        pytest.raises(RuntimeError, match="secret response body"),
+    ):
+        timed_cloud_call(
+            logger,
+            "OTP token exchange",
+            call,
+            "owner@example.com",
+            "123456",
+        )
+
+    assert (
+        "Vorwerk OTP token exchange failed after 1.5 seconds "
+        "(RuntimeError, HTTP status 403)" in caplog.text
+    )
+    assert "owner@example.com" not in caplog.text
+    assert "123456" not in caplog.text
+    assert "secret response body" not in caplog.text

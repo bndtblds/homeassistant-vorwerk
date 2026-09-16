@@ -1,6 +1,7 @@
 """Config flow for the Vorwerk Kobold integration."""
 from __future__ import annotations
 
+import logging
 import warnings
 from typing import Any
 
@@ -29,6 +30,9 @@ from .const import (
     VORWERK_ROBOT_TRAITS,
     VORWERK_ROBOTS,
 )
+from .diagnostics import timed_cloud_call
+
+_LOGGER = logging.getLogger(__name__)
 
 DOCUMENTATION_URL = "https://github.com/bndtblds/homeassistant-vorwerk"
 
@@ -71,7 +75,7 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
         errors: dict[str, str] = {}
         if user_input is None:
             await self.hass.async_add_executor_job(
-                self._session.send_email_otp,
+                self._send_email_otp,
                 self._email,
             )
         else:
@@ -99,7 +103,38 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
 
     def _fetch_robots(self, email: str, code: str) -> list[dict[str, Any]]:
         """Fetch robots available for the authenticated account."""
-        self._session.fetch_token_passwordless(email, code)
+        timed_cloud_call(
+            _LOGGER,
+            "OTP token exchange",
+            self._session.fetch_token_passwordless,
+            email,
+            code,
+        )
+        response = timed_cloud_call(
+            _LOGGER,
+            "robot list request",
+            self._session.get,
+            "users/me/robots",
+        )
+        return timed_cloud_call(
+            _LOGGER,
+            "robot list validation",
+            self._robots_from_response,
+            response,
+        )
+
+    def _send_email_otp(self, email: str) -> None:
+        """Request an OTP while recording privacy-safe diagnostics."""
+        timed_cloud_call(
+            _LOGGER,
+            "OTP email request",
+            self._session.send_email_otp,
+            email,
+        )
+
+    @staticmethod
+    def _robots_from_response(response: Any) -> list[dict[str, Any]]:
+        """Validate and map the robot list returned by the cloud."""
         return [
             {
                 VORWERK_ROBOT_NAME: robot["name"],
@@ -108,7 +143,7 @@ class VorwerkConfigFlow(config_entries.ConfigFlow, domain=VORWERK_DOMAIN):
                 VORWERK_ROBOT_TRAITS: robot["traits"],
                 VORWERK_ROBOT_ENDPOINT: robot["nucleo_url"],
             }
-            for robot in self._session.get("users/me/robots").json()
+            for robot in response.json()
         ]
 
 

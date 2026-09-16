@@ -8,7 +8,7 @@ This project follows a simplified version of the guidelines from
 ## [Unreleased]
 
 ### Changed
-- Added operation-level timing diagnostics for blocking robot setup, polling, commands, and map-boundary requests without exposing complete robot serial numbers.
+- Added privacy-safe operation diagnostics for authentication, robot setup, polling, commands, and map-boundary requests. Debug logs now identify the active operation and its duration, while failures include only the exception type and available HTTP status instead of credentials or response content.
 
 ### Fixed
 - Prevented config entry reloads from starting another polling job for a robot while its previous blocking update is still running.
