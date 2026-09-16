@@ -96,20 +96,28 @@ async def test_timeout_and_delayed_completion(
     assert coordinator._update_future is None
 
 
-async def test_overlapping_update_is_rejected(
+async def test_overlapping_update_is_rejected_across_coordinator_reload(
     hass: HomeAssistant,
     config_entry: MockConfigEntry,
     robot_state: VorwerkRobotState,
 ) -> None:
-    """Test that a second update does not create another executor job."""
-    coordinator = make_coordinator(hass, config_entry, robot_state)
+    """Test that a reloaded coordinator cannot duplicate a running update."""
+    first_coordinator = make_coordinator(hass, config_entry, robot_state)
+    reloaded_coordinator = make_coordinator(hass, config_entry, robot_state)
     pending = hass.loop.create_future()
-    coordinator._update_future = pending
+
+    with (
+        patch.object(hass, "async_add_executor_job", return_value=pending),
+        patch("custom_components.vorwerk.coordinator.ROBOT_API_TIMEOUT", 0.01),
+        pytest.raises(UpdateFailed, match="Timed out updating"),
+    ):
+        await first_coordinator._async_update_data()
 
     with pytest.raises(UpdateFailed, match="Previous update"):
-        await coordinator._async_update_data()
+        await reloaded_coordinator._async_update_data()
 
-    pending.cancel()
+    pending.set_result(None)
+    await asyncio.sleep(0)
 
 
 def test_entity_unavailable_after_coordinator_failure(

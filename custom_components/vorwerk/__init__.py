@@ -5,6 +5,7 @@ import asyncio
 import logging
 import warnings
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any
 
 with warnings.catch_warnings():
@@ -52,6 +53,7 @@ from .const import (
     VORWERK_ROBOTS,
 )
 from .coordinator import VorwerkDataUpdateCoordinator
+from .diagnostics import robot_log_id, timed_robot_call
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -269,14 +271,33 @@ async def _async_create_robots(
     """Create Robot objects for all configured robots."""
 
     def create_robot(config: dict[str, Any]) -> Robot:
-        return Robot(
-            serial=config[VORWERK_ROBOT_SERIAL],
-            secret=config[VORWERK_ROBOT_SECRET],
-            traits=config.get(VORWERK_ROBOT_TRAITS, []),
-            vendor=Vorwerk(),
-            name=config[VORWERK_ROBOT_NAME],
-            endpoint=config.get(VORWERK_ROBOT_ENDPOINT, DEFAULT_ENDPOINT),
+        name = config[VORWERK_ROBOT_NAME]
+        serial = config[VORWERK_ROBOT_SERIAL]
+        started_at = monotonic()
+        robot_config_log_id = f"{name} (***{serial[-4:]})" if serial else name
+        _LOGGER.debug("Creating Vorwerk robot %s", robot_config_log_id)
+        try:
+            robot = Robot(
+                serial=serial,
+                secret=config[VORWERK_ROBOT_SECRET],
+                traits=config.get(VORWERK_ROBOT_TRAITS, []),
+                vendor=Vorwerk(),
+                name=name,
+                endpoint=config.get(VORWERK_ROBOT_ENDPOINT, DEFAULT_ENDPOINT),
+            )
+        except Exception:
+            _LOGGER.warning(
+                "Creating Vorwerk robot %s failed after %.1f seconds",
+                robot_config_log_id,
+                monotonic() - started_at,
+            )
+            raise
+        _LOGGER.debug(
+            "Created Vorwerk robot %s in %.1f seconds",
+            robot_log_id(robot),
+            monotonic() - started_at,
         )
+        return robot
 
     try:
         return await asyncio.gather(
@@ -305,7 +326,9 @@ class VorwerkRobotState:
 
     def update(self) -> None:
         """Refresh robot information and state from the API."""
-        _LOGGER.debug("Refreshing Vorwerk robot state for %s", self.robot.name)
+        _LOGGER.debug(
+            "Refreshing Vorwerk robot state for %s", robot_log_id(self.robot)
+        )
         self._update_robot_info()
         self._update_robot_state()
 
@@ -315,9 +338,17 @@ class VorwerkRobotState:
             return
 
         try:
-            response_data = self.robot.get_general_info().json().get("data")
+            response = timed_robot_call(
+                _LOGGER,
+                self.robot,
+                "get_general_info",
+                self.robot.get_general_info,
+            )
+            response_data = response.json().get("data")
         except NeatoRobotException:
-            _LOGGER.warning("Unable to fetch robot information for %s", self.robot.name)
+            _LOGGER.warning(
+                "Unable to fetch robot information for %s", robot_log_id(self.robot)
+            )
             return
 
         if isinstance(response_data, dict):
@@ -326,14 +357,19 @@ class VorwerkRobotState:
     def _update_robot_state(self) -> None:
         """Fetch the latest dynamic robot state."""
         try:
-            state = self.robot.state
+            state = timed_robot_call(
+                _LOGGER,
+                self.robot,
+                "get_robot_state",
+                lambda: self.robot.state,
+            )
         except NeatoRobotException:
             self.robot_state = {}
             raise
 
         if isinstance(state, dict):
             self.robot_state = state
-            _LOGGER.debug("Vorwerk state for %s: %s", self.robot.name, state)
+            _LOGGER.debug("Vorwerk state for %s: %s", robot_log_id(self.robot), state)
             return
 
         self.robot_state = {}
