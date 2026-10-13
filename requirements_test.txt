@@ -1,5 +1,4 @@
 homeassistant==2026.9.1
-pybotvac==0.0.28
+pybotvac==0.0.29
 pytest-cov==7.1.0
 pytest-homeassistant-custom-component==0.13.364
-setuptools==80.10.2

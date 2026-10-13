@@ -3,19 +3,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import warnings
 from dataclasses import dataclass
 from typing import Any
-
-with warnings.catch_warnings():
-    warnings.filterwarnings(
-        "ignore",
-        message="pkg_resources is deprecated as an API.*",
-        category=UserWarning,
-    )
-    from pybotvac.exceptions import NeatoException, NeatoRobotException
-    from pybotvac.robot import Robot
-    from pybotvac.vorwerk import Vorwerk
 
 import voluptuous as vol
 from homeassistant.components.vacuum import DOMAIN as VACUUM_DOMAIN
@@ -28,6 +17,9 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import service
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.typing import ConfigType
+from pybotvac.exceptions import NeatoException, NeatoRobotException
+from pybotvac.robot import Robot
+from pybotvac.vorwerk import Vorwerk
 
 from .const import (
     ACTION,
