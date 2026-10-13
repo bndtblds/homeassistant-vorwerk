@@ -8,9 +8,9 @@ This project follows a simplified version of the guidelines from
 ## [Unreleased]
 
 ### Fixed
-- Restored compatibility with Home Assistant 2026.10 and Python 3.14 by updating
-  `pybotvac` to 0.0.29, which no longer imports the removed `pkg_resources`
-  module.
+- Restored compatibility with Home Assistant 2026.10 and Python 3.14 by requiring
+  `pybotvac` 0.0.29 or newer, which no longer imports the removed
+  `pkg_resources` module.
 
 ## [2026.9.1] - 2026-09-14
 
