@@ -9,6 +9,7 @@ from typing import Any, TypeVar
 from pybotvac.robot import Robot
 
 _T = TypeVar("_T")
+_ACTIVE_FAILURES: set[tuple[str, str, str | None]] = set()
 
 
 def _http_status_from_exception(err: Exception) -> int | None:
@@ -33,6 +34,7 @@ def timed_cloud_call(
     call: Callable[..., _T],
     *args: Any,
     context: str | None = None,
+    suppress_repeated_warnings: bool = False,
 ) -> _T:
     """Run a blocking cloud call and log only safe operational metadata."""
     target = f" for {context}" if context else ""
@@ -44,7 +46,13 @@ def timed_cloud_call(
     except Exception as err:
         status_code = _http_status_from_exception(err)
         status = f", HTTP status {status_code}" if status_code is not None else ""
-        logger.warning(
+        failure_key = (logger.name, operation, context)
+        log = (
+            logger.debug
+            if suppress_repeated_warnings and failure_key in _ACTIVE_FAILURES
+            else logger.warning
+        )
+        log(
             "Vorwerk %s%s failed after %.1f seconds (%s%s)",
             operation,
             target,
@@ -52,8 +60,11 @@ def timed_cloud_call(
             type(err).__name__,
             status,
         )
+        if suppress_repeated_warnings:
+            _ACTIVE_FAILURES.add(failure_key)
         raise
 
+    _ACTIVE_FAILURES.discard((logger.name, operation, context))
     logger.debug(
         "Finished Vorwerk %s%s in %.1f seconds",
         operation,
@@ -88,4 +99,5 @@ def timed_robot_call(
         call,
         *args,
         context=robot_log_id(robot),
+        suppress_repeated_warnings=True,
     )

@@ -7,6 +7,13 @@ This project follows a simplified version of the guidelines from
 
 ## [Unreleased]
 
+### Added
+- Added privacy-safe timing and failure diagnostics for Vorwerk cloud operations.
+
+### Changed
+- Limited repeated robot polling failures to one warning until communication
+  succeeds again, preventing unavailable robots from flooding Home Assistant logs.
+
 ## [2026.10.1] - 2026-10-13
 
 ### Fixed

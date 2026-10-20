@@ -7,11 +7,18 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from custom_components.vorwerk.diagnostics import (
+    _ACTIVE_FAILURES,
     masked_robot_serial,
     robot_log_id,
     timed_cloud_call,
     timed_robot_call,
 )
+
+
+@pytest.fixture(autouse=True)
+def clear_active_failures() -> None:
+    """Keep failure-suppression state isolated between tests."""
+    _ACTIVE_FAILURES.clear()
 
 
 def test_robot_log_id_masks_serial(robot: MagicMock) -> None:
@@ -68,6 +75,49 @@ def test_timed_robot_call_logs_failure(
         "Vorwerk get_robot_state for Upstairs (***1234) failed after 3.0 seconds"
         in caplog.text
     )
+
+
+def test_timed_robot_call_suppresses_repeated_warnings_until_success(
+    caplog: pytest.LogCaptureFixture,
+    robot: MagicMock,
+) -> None:
+    """Test that repeated polling failures do not flood warning logs."""
+    logger = logging.getLogger("test.vorwerk.repeated_diagnostics")
+    call = MagicMock(
+        side_effect=[
+            RuntimeError("offline"),
+            RuntimeError("offline"),
+            None,
+            RuntimeError("offline"),
+        ]
+    )
+
+    with (
+        caplog.at_level(logging.DEBUG, logger=logger.name),
+        patch(
+            "custom_components.vorwerk.diagnostics.monotonic",
+            side_effect=[10.0, 11.0, 20.0, 21.0, 30.0, 31.0, 40.0, 41.0],
+        ),
+    ):
+        with pytest.raises(RuntimeError, match="offline"):
+            timed_robot_call(logger, robot, "get_robot_state", call)
+        with pytest.raises(RuntimeError, match="offline"):
+            timed_robot_call(logger, robot, "get_robot_state", call)
+        timed_robot_call(logger, robot, "get_robot_state", call)
+        with pytest.raises(RuntimeError, match="offline"):
+            timed_robot_call(logger, robot, "get_robot_state", call)
+
+    failure_records = [
+        record
+        for record in caplog.records
+        if "Vorwerk get_robot_state" in record.message
+        and "failed after" in record.message
+    ]
+    assert [record.levelno for record in failure_records] == [
+        logging.WARNING,
+        logging.DEBUG,
+        logging.WARNING,
+    ]
 
 
 def test_timed_cloud_call_logs_http_status_without_sensitive_data(

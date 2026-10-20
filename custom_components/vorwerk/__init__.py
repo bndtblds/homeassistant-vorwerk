@@ -308,9 +308,17 @@ class VorwerkRobotState:
             return
 
         try:
-            response_data = timed_robot_call(_LOGGER, self.robot, "get_general_info", self.robot.get_general_info).json().get("data")
+            response_data = (
+                timed_robot_call(
+                    _LOGGER,
+                    self.robot,
+                    "get_general_info",
+                    self.robot.get_general_info,
+                )
+                .json()
+                .get("data")
+            )
         except NeatoRobotException:
-            _LOGGER.warning("Unable to fetch robot information for %s", self.robot.name)
             return
 
         if isinstance(response_data, dict):
@@ -319,7 +327,12 @@ class VorwerkRobotState:
     def _update_robot_state(self) -> None:
         """Fetch the latest dynamic robot state."""
         try:
-            state = timed_robot_call(_LOGGER, self.robot, "get_robot_state", lambda: self.robot.state)
+            state = timed_robot_call(
+                _LOGGER,
+                self.robot,
+                "get_robot_state",
+                lambda: self.robot.state,
+            )
         except NeatoRobotException:
             self.robot_state = {}
             raise
