@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from homeassistant.config_entries import SOURCE_USER
@@ -13,6 +13,14 @@ from pybotvac.exceptions import NeatoException
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from requests import HTTPError
 
+from custom_components.vorwerk.config_flow import (
+    ROBOT_LIST_FALLBACK_ENDPOINT,
+    VorwerkRobotListError,
+    VorwerkRobotListResponseError,
+    VorwerkSession,
+    VorwerkTokenExchangeError,
+    VorwerkTokenResponseError,
+)
 from custom_components.vorwerk.const import VORWERK_DOMAIN, VORWERK_ROBOTS
 
 
@@ -72,7 +80,7 @@ async def test_invalid_code_does_not_resend_otp(hass: HomeAssistant) -> None:
         ) as send_otp,
         patch(
             "custom_components.vorwerk.config_flow.VorwerkConfigFlow._fetch_robots",
-            side_effect=NeatoException("invalid code"),
+            side_effect=VorwerkTokenExchangeError,
         ),
     ):
         code_form = await hass.config_entries.flow.async_init(
@@ -143,16 +151,15 @@ def test_fetch_robots_maps_cloud_response() -> None:
 
     flow = VorwerkConfigFlow()
     flow._session = MagicMock()
-    flow._session.get.return_value.json.return_value = [
+    flow._session.fetch_robot_list.return_value = [
         {
             "name": "Upstairs",
             "serial": "VR300-1234",
-            "secret_key": "secret",
+            "secret": "secret",
             "traits": ["maps"],
-            "nucleo_url": "https://example.invalid",
+            "endpoint": "https://example.invalid",
         }
     ]
-
     assert flow._fetch_robots("owner@example.com", "123456") == [
         {
             "name": "Upstairs",
@@ -165,84 +172,146 @@ def test_fetch_robots_maps_cloud_response() -> None:
     flow._session.fetch_token_passwordless.assert_called_once_with(
         "owner@example.com", "123456"
     )
+    flow._session.validate_token.assert_called_once_with()
+    flow._session.fetch_robot_list.assert_called_once_with()
 
 
-def test_fetch_robots_logs_token_exchange_failure_safely(
+def _robot_payload() -> dict[str, object]:
+    """Return a representative robot-list item."""
+    return {
+        "name": "Upstairs",
+        "serial": "VR300-1234",
+        "secret_key": "secret",
+        "traits": ["maps"],
+        "nucleo_url": "https://example.invalid",
+    }
+
+
+def _http_neato_error(status_code: int) -> NeatoException:
+    """Return a pybotvac error with a chained HTTP status."""
+    http_error = HTTPError(response=MagicMock(status_code=status_code))
+    error = NeatoException("private response")
+    error.__cause__ = http_error
+    return error
+
+
+@pytest.mark.parametrize("token", [None, {}, {"id_token": None}, {"id_token": ""}])
+def test_token_response_is_validated(token: object) -> None:
+    """Test that only a non-empty ID token can be used for robot requests."""
+    session = VorwerkSession()
+    session._token = token
+
+    with pytest.raises(VorwerkTokenResponseError):
+        session.validate_token()
+
+
+def test_valid_id_token_is_accepted() -> None:
+    """Test the token type used by pybotvac's Auth0Bearer header."""
+    session = VorwerkSession()
+    session._token = {"id_token": "not-a-real-token", "access_token": "unused"}
+
+    session.validate_token()
+
+
+def test_robot_list_falls_back_on_401_and_caches_endpoint(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Test that token failures identify the step without exposing credentials."""
-    from custom_components.vorwerk.config_flow import VorwerkConfigFlow
-
-    flow = VorwerkConfigFlow()
-    flow._session = MagicMock()
-    response = MagicMock(status_code=403)
-    flow._session.fetch_token_passwordless.side_effect = HTTPError(
-        "response containing sensitive details",
-        response=response,
-    )
+    """Test the compatibility endpoint and its session-level caching."""
+    session = VorwerkSession()
+    fallback_response = MagicMock()
+    fallback_response.json.return_value = {"robots": [_robot_payload()]}
+    cached_response = MagicMock()
+    cached_response.json.return_value = {"robots": [_robot_payload()]}
 
     with (
+        patch.object(
+            session,
+            "get",
+            side_effect=[
+                _http_neato_error(401),
+                fallback_response,
+                cached_response,
+            ],
+        ) as get,
         caplog.at_level(logging.DEBUG, logger="custom_components.vorwerk.config_flow"),
-        pytest.raises(HTTPError),
     ):
-        flow._fetch_robots("owner@example.com", "123456")
+        first = session.fetch_robot_list()
+        second = session.fetch_robot_list()
 
-    assert "Vorwerk OTP token exchange failed" in caplog.text
-    assert "HTTPError, HTTP status 403" in caplog.text
-    assert "owner@example.com" not in caplog.text
-    assert "123456" not in caplog.text
-    assert "sensitive details" not in caplog.text
-    flow._session.get.assert_not_called()
+    assert first == second
+    assert session._robot_list_endpoint == ROBOT_LIST_FALLBACK_ENDPOINT
+    assert get.call_args_list == [
+        call("users/me/robots"),
+        call("dashboard"),
+        call("dashboard"),
+    ]
+    assert "using the compatibility endpoint for this session" in caplog.text
+    assert "private response" not in caplog.text
 
 
-def test_fetch_robots_logs_robot_list_failure_safely(
+def test_robot_list_does_not_fall_back_on_other_errors(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Test that robot-list failures are distinct from rejected OTP codes."""
+    """Test that only an HTTP 401 selects the compatibility endpoint."""
+    session = VorwerkSession()
+
+    with (
+        caplog.at_level(
+            logging.DEBUG, logger="custom_components.vorwerk.config_flow"
+        ),
+        patch.object(session, "get", side_effect=_http_neato_error(503)) as get,
+        pytest.raises(NeatoException),
+    ):
+        session.fetch_robot_list()
+
+    get.assert_called_once_with("users/me/robots")
+    warning = next(record for record in caplog.records if record.levelno == logging.WARNING)
+    assert warning.message == (
+        "Vorwerk robot list request failed (NeatoException, HTTP status 503)"
+    )
+    assert "private response" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        {"robots": {}},
+        {"robots": ["not-a-robot"]},
+        {"robots": [{"name": "Missing fields"}]},
+    ],
+)
+def test_dashboard_response_is_validated(payload: object) -> None:
+    """Test strict validation of the dashboard response shape."""
+    session = VorwerkSession()
+    session._robot_list_endpoint = ROBOT_LIST_FALLBACK_ENDPOINT
+    response = MagicMock()
+    response.json.return_value = payload
+
+    with (
+        patch.object(session, "get", return_value=response),
+        pytest.raises(VorwerkRobotListResponseError),
+    ):
+        session.fetch_robot_list()
+
+
+def test_token_and_robot_list_failures_are_logged_separately(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test privacy-safe diagnostics for the two authentication phases."""
     from custom_components.vorwerk.config_flow import VorwerkConfigFlow
 
     flow = VorwerkConfigFlow()
     flow._session = MagicMock()
-    response = MagicMock(status_code=503)
-    http_error = HTTPError("private response", response=response)
-    neato_error = NeatoException("generic cloud error")
-    neato_error.__cause__ = http_error
-    flow._session.get.side_effect = neato_error
+    flow._session.fetch_robot_list.side_effect = _http_neato_error(503)
 
     with (
         caplog.at_level(logging.DEBUG, logger="custom_components.vorwerk.config_flow"),
-        pytest.raises(NeatoException),
+        pytest.raises(VorwerkRobotListError),
     ):
         flow._fetch_robots("owner@example.com", "123456")
 
     assert "Finished Vorwerk OTP token exchange" in caplog.text
-    assert "Vorwerk robot list request failed" in caplog.text
-    assert "NeatoException, HTTP status 503" in caplog.text
     assert "owner@example.com" not in caplog.text
     assert "123456" not in caplog.text
     assert "private response" not in caplog.text
-
-
-def test_fetch_robots_logs_response_validation_failure_safely(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """Test that malformed robot data identifies the validation step only."""
-    from custom_components.vorwerk.config_flow import VorwerkConfigFlow
-
-    flow = VorwerkConfigFlow()
-    flow._session = MagicMock()
-    flow._session.get.return_value.json.return_value = [
-        {"name": "Private robot name"}
-    ]
-
-    with (
-        caplog.at_level(logging.DEBUG, logger="custom_components.vorwerk.config_flow"),
-        pytest.raises(KeyError, match="serial"),
-    ):
-        flow._fetch_robots("owner@example.com", "123456")
-
-    assert "Vorwerk robot list validation failed" in caplog.text
-    assert "KeyError" in caplog.text
-    assert "Private robot name" not in caplog.text
-    assert "owner@example.com" not in caplog.text
-    assert "123456" not in caplog.text

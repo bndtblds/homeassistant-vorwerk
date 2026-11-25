@@ -4,8 +4,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable
-from typing import Any
 from time import monotonic
+from typing import Any
 
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -52,20 +52,43 @@ class VorwerkEntity(CoordinatorEntity[VorwerkDataUpdateCoordinator]):
                 self.hass.async_add_executor_job(command, *args),
                 timeout=ROBOT_API_TIMEOUT,
             )
-        except asyncio.TimeoutError as err:
-            _LOGGER.error("Vorwerk command %s timed out for %s after %.1f seconds", operation, robot_id, monotonic() - started_at)
+        except TimeoutError as err:
+            _LOGGER.error("Vorwerk command %s timed out for %s", operation, robot_id)
+            _LOGGER.debug(
+                "Vorwerk command %s timed out for %s after %.1f seconds",
+                operation,
+                robot_id,
+                monotonic() - started_at,
+            )
             raise HomeAssistantError(
                 translation_domain=VORWERK_DOMAIN,
                 translation_key="command_failed",
                 translation_placeholders={"robot": self.robot.name},
             ) from err
         except Exception as err:
-            _LOGGER.error("Vorwerk command %s failed for %s after %.1f seconds (%s)", operation, robot_id, monotonic() - started_at, type(err).__name__)
+            _LOGGER.error(
+                "Vorwerk command %s failed for %s (%s)",
+                operation,
+                robot_id,
+                type(err).__name__,
+            )
+            _LOGGER.debug(
+                "Vorwerk command %s failed for %s after %.1f seconds (%s)",
+                operation,
+                robot_id,
+                monotonic() - started_at,
+                type(err).__name__,
+            )
             raise HomeAssistantError(
                 translation_domain=VORWERK_DOMAIN,
                 translation_key="command_failed",
                 translation_placeholders={"robot": self.robot.name},
             ) from err
-        _LOGGER.debug("Finished Vorwerk command %s for %s in %.1f seconds", operation, robot_id, monotonic() - started_at)
+        _LOGGER.debug(
+            "Finished Vorwerk command %s for %s in %.1f seconds",
+            operation,
+            robot_id,
+            monotonic() - started_at,
+        )
         if refresh:
             await self.coordinator.async_request_refresh()

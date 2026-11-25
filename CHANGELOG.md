@@ -8,11 +8,18 @@ This project follows a simplified version of the guidelines from
 ## [Unreleased]
 
 ### Added
-- Added privacy-safe timing and failure diagnostics for Vorwerk cloud operations.
+- Added privacy-safe native debug logging for authentication, robot polling,
+  commands, and map-boundary requests.
 
 ### Changed
-- Limited repeated robot polling failures to one warning until communication
-  succeeds again, preventing unavailable robots from flooding Home Assistant logs.
+- Authentication errors now distinguish OTP token failures, robot-list request
+  failures, and invalid robot-list responses.
+- Repeated robot communication failures produce one warning until communication
+  succeeds again, while detailed flow and timing data remains on debug level.
+
+### Fixed
+- Added a validated, session-cached `/dashboard` compatibility fallback when the
+  primary Vorwerk robot-list endpoint specifically returns HTTP 401.
 
 ## [2026.10.1] - 2026-10-13
 

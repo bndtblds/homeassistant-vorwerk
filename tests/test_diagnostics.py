@@ -28,7 +28,7 @@ def test_robot_log_id_masks_serial(robot: MagicMock) -> None:
     assert "VR300-1234" not in robot_log_id(robot)
 
 
-def test_timed_robot_call_logs_start_and_finish(
+def test_timed_robot_call_logs_timing_only_at_debug(
     caplog: pytest.LogCaptureFixture,
     robot: MagicMock,
 ) -> None:
@@ -45,39 +45,15 @@ def test_timed_robot_call_logs_start_and_finish(
     ):
         assert timed_robot_call(logger, robot, "get_robot_state", call) == "result"
 
-    assert "Starting Vorwerk get_robot_state for Upstairs (***1234)" in caplog.text
-    assert (
-        "Finished Vorwerk get_robot_state for Upstairs (***1234) in 2.5 seconds"
-        in caplog.text
-    )
+    timing_records = [
+        record for record in caplog.records if "2.5 seconds" in record.message
+    ]
+    assert len(timing_records) == 1
+    assert timing_records[0].levelno == logging.DEBUG
     assert "VR300-1234" not in caplog.text
 
 
-def test_timed_robot_call_logs_failure(
-    caplog: pytest.LogCaptureFixture,
-    robot: MagicMock,
-) -> None:
-    """Test failed blocking-call timing diagnostics."""
-    logger = logging.getLogger("test.vorwerk.diagnostics")
-    call = MagicMock(side_effect=RuntimeError("offline"))
-
-    with (
-        caplog.at_level(logging.WARNING, logger=logger.name),
-        patch(
-            "custom_components.vorwerk.diagnostics.monotonic",
-            side_effect=[20.0, 23.0],
-        ),
-        pytest.raises(RuntimeError, match="offline"),
-    ):
-        timed_robot_call(logger, robot, "get_robot_state", call)
-
-    assert (
-        "Vorwerk get_robot_state for Upstairs (***1234) failed after 3.0 seconds"
-        in caplog.text
-    )
-
-
-def test_timed_robot_call_suppresses_repeated_warnings_until_success(
+def test_repeated_robot_failures_warn_once_until_success(
     caplog: pytest.LogCaptureFixture,
     robot: MagicMock,
 ) -> None:
@@ -92,13 +68,7 @@ def test_timed_robot_call_suppresses_repeated_warnings_until_success(
         ]
     )
 
-    with (
-        caplog.at_level(logging.DEBUG, logger=logger.name),
-        patch(
-            "custom_components.vorwerk.diagnostics.monotonic",
-            side_effect=[10.0, 11.0, 20.0, 21.0, 30.0, 31.0, 40.0, 41.0],
-        ),
-    ):
+    with caplog.at_level(logging.DEBUG, logger=logger.name):
         with pytest.raises(RuntimeError, match="offline"):
             timed_robot_call(logger, robot, "get_robot_state", call)
         with pytest.raises(RuntimeError, match="offline"):
@@ -107,20 +77,15 @@ def test_timed_robot_call_suppresses_repeated_warnings_until_success(
         with pytest.raises(RuntimeError, match="offline"):
             timed_robot_call(logger, robot, "get_robot_state", call)
 
-    failure_records = [
+    warnings = [
         record
         for record in caplog.records
-        if "Vorwerk get_robot_state" in record.message
-        and "failed after" in record.message
+        if record.levelno == logging.WARNING and "get_robot_state" in record.message
     ]
-    assert [record.levelno for record in failure_records] == [
-        logging.WARNING,
-        logging.DEBUG,
-        logging.WARNING,
-    ]
+    assert len(warnings) == 2
 
 
-def test_timed_cloud_call_logs_http_status_without_sensitive_data(
+def test_failure_warning_omits_timing_and_sensitive_data(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test safe HTTP failure metadata without arguments or response content."""
@@ -146,9 +111,12 @@ def test_timed_cloud_call_logs_http_status_without_sensitive_data(
             "123456",
         )
 
-    assert (
-        "Vorwerk OTP token exchange failed after 1.5 seconds "
-        "(RuntimeError, HTTP status 403)" in caplog.text
+    warning = next(record for record in caplog.records if record.levelno == logging.WARNING)
+    assert "HTTP status 403" in warning.message
+    assert "seconds" not in warning.message
+    assert any(
+        record.levelno == logging.DEBUG and "1.5 seconds" in record.message
+        for record in caplog.records
     )
     assert "owner@example.com" not in caplog.text
     assert "123456" not in caplog.text

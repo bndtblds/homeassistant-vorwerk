@@ -17,7 +17,10 @@
       }
     },
     "error": {
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]"
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "invalid_robot_list": "Vorwerk returned an invalid robot list response.",
+      "robot_list_unavailable": "Authentication succeeded, but the Vorwerk robot list could not be loaded."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_account%]"

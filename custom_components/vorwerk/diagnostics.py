@@ -12,8 +12,8 @@ _T = TypeVar("_T")
 _ACTIVE_FAILURES: set[tuple[str, str, str | None]] = set()
 
 
-def _http_status_from_exception(err: Exception) -> int | None:
-    """Return an HTTP status from an exception chain without logging its data."""
+def http_status_from_exception(err: BaseException) -> int | None:
+    """Return an HTTP status from an exception chain without exposing its data."""
     current: BaseException | None = err
     seen: set[int] = set()
 
@@ -35,6 +35,7 @@ def timed_cloud_call(
     *args: Any,
     context: str | None = None,
     suppress_repeated_warnings: bool = False,
+    warn_on_failure: bool = True,
 ) -> _T:
     """Run a blocking cloud call and log only safe operational metadata."""
     target = f" for {context}" if context else ""
@@ -44,19 +45,25 @@ def timed_cloud_call(
     try:
         result = call(*args)
     except Exception as err:
-        status_code = _http_status_from_exception(err)
+        elapsed = monotonic() - started_at
+        status_code = http_status_from_exception(err)
         status = f", HTTP status {status_code}" if status_code is not None else ""
         failure_key = (logger.name, operation, context)
-        log = (
-            logger.debug
-            if suppress_repeated_warnings and failure_key in _ACTIVE_FAILURES
-            else logger.warning
-        )
-        log(
+        repeated = suppress_repeated_warnings and failure_key in _ACTIVE_FAILURES
+
+        if warn_on_failure and not repeated:
+            logger.warning(
+                "Vorwerk %s%s failed (%s%s)",
+                operation,
+                target,
+                type(err).__name__,
+                status,
+            )
+        logger.debug(
             "Vorwerk %s%s failed after %.1f seconds (%s%s)",
             operation,
             target,
-            monotonic() - started_at,
+            elapsed,
             type(err).__name__,
             status,
         )
