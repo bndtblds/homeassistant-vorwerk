@@ -1,22 +1,14 @@
 """Config flow for the Vorwerk Kobold integration."""
 from __future__ import annotations
 
-import warnings
 from typing import Any
 
-with warnings.catch_warnings():
-    warnings.filterwarnings(
-        "ignore",
-        message="pkg_resources is deprecated as an API.*",
-        category=UserWarning,
-    )
-    import pybotvac
-    from pybotvac.exceptions import NeatoException
-
+import pybotvac
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_CODE, CONF_EMAIL
 from homeassistant.data_entry_flow import FlowResult
+from pybotvac.exceptions import NeatoException
 from requests import HTTPError
 
 from .const import (
