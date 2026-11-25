@@ -14,13 +14,30 @@
           "code": "Code"
         },
         "description": "Enter the code you received by email.\n\nSee [Vorwerk documentation]({docs_url})."
+      },
+      "reconfigure": {
+        "title": "Renew Vorwerk authentication",
+        "description": "Renew Vorwerk authentication for {email}. After confirmation, Vorwerk will send a new one-time code to this address."
+      },
+      "reconfigure_code": {
+        "title": "Renew Vorwerk authentication",
+        "data": {
+          "code": "Code"
+        },
+        "description": "Enter the one-time code Vorwerk sent to {email}."
       }
     },
     "error": {
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]"
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "otp_request_failed": "Unable to request a one-time code from Vorwerk.",
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "robots_unavailable": "Unable to load robot information from Vorwerk.",
+      "no_robots": "No robots were found for this Vorwerk account.",
+      "account_mismatch": "The authenticated account does not match the configured Vorwerk account. No changes were saved."
     },
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_account%]"
+      "already_configured": "[%key:common::config_flow::abort::already_configured_account%]",
+      "unique_id_mismatch": "The configured Vorwerk account does not match this entry."
     }
   },
   "services": {
