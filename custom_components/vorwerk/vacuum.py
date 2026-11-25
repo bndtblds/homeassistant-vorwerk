@@ -104,7 +104,13 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
 
     async def async_clean_spot(self, **kwargs: Any) -> None:
         """Start a spot clean."""
-        await self._async_call_robot_command(self.robot.start_spot_cleaning)
+        await self._async_call_robot_command(
+            self.robot.start_spot_cleaning,
+            200,
+            200,
+            2,
+            1,
+        )
 
     async def async_custom_cleaning(
         self,

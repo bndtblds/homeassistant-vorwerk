@@ -98,7 +98,6 @@ async def test_robot_command_api_error(
         ("async_pause", "pause_cleaning"),
         ("async_stop", "stop_cleaning"),
         ("async_locate", "locate"),
-        ("async_clean_spot", "start_spot_cleaning"),
     ],
 )
 async def test_vacuum_commands(
@@ -114,6 +113,24 @@ async def test_vacuum_commands(
 
     entity._async_call_robot_command.assert_awaited_once_with(
         getattr(entity.robot, robot_method)
+    )
+
+
+async def test_vacuum_clean_spot_uses_app_compatible_defaults(
+    coordinator: MagicMock,
+) -> None:
+    """Test the native spot-cleaning size, mode, and repetition defaults."""
+    entity = VorwerkVacuumEntity(coordinator)
+    entity._async_call_robot_command = AsyncMock()
+
+    await entity.async_clean_spot()
+
+    entity._async_call_robot_command.assert_awaited_once_with(
+        entity.robot.start_spot_cleaning,
+        200,
+        200,
+        2,
+        1,
     )
 
 
