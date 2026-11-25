@@ -7,6 +7,20 @@ This project follows a simplified version of the guidelines from
 
 ## [Unreleased]
 
+### Added
+- Added privacy-safe native debug logging for authentication, robot polling,
+  commands, and map-boundary requests.
+
+### Changed
+- Authentication errors now distinguish OTP token failures, robot-list request
+  failures, and invalid robot-list responses.
+- Repeated robot communication failures produce one warning until communication
+  succeeds again, while detailed flow and timing data remains on debug level.
+
+### Fixed
+- Added a validated, session-cached `/dashboard` compatibility fallback when the
+  primary Vorwerk robot-list endpoint specifically returns HTTP 401.
+
 ## [2026.10.1] - 2026-10-13
 
 ### Fixed

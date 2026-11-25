@@ -17,7 +17,10 @@
       }
     },
     "error": {
-      "invalid_auth": "Invalid authentication"
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "invalid_robot_list": "Vorwerk returned an invalid robot list response.",
+      "robot_list_unavailable": "Authentication succeeded, but the Vorwerk robot list could not be loaded."
     },
     "abort": {
       "already_configured": "Account is already configured"

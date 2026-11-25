@@ -16,6 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import VorwerkConfigEntry
 from .const import ROBOT_API_TIMEOUT, VORWERK_DOMAIN
+from .diagnostics import timed_robot_call
 from .entity import VorwerkEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -175,7 +176,7 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
                 self.hass.async_add_executor_job(self._load_map_boundaries),
                 timeout=ROBOT_API_TIMEOUT,
             )
-        except asyncio.TimeoutError as err:
+        except TimeoutError as err:
             _LOGGER.warning("Timed out loading map boundaries for %s", self.robot.name)
             raise HomeAssistantError(
                 translation_domain=VORWERK_DOMAIN,
@@ -198,7 +199,12 @@ class VorwerkVacuumEntity(VorwerkEntity, StateVacuumEntity):
 
     def _load_map_boundaries(self) -> list[dict[str, Any]]:
         """Load zone boundaries from the blocking pybotvac API."""
-        response = self.robot.get_map_boundaries().json()
+        response = timed_robot_call(
+            _LOGGER,
+            self.robot,
+            "get_map_boundaries",
+            self.robot.get_map_boundaries,
+        ).json()
 
         boundaries = response.get("data", {}).get("boundaries", [])
         if isinstance(boundaries, list):
