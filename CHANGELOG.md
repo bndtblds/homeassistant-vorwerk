@@ -7,6 +7,11 @@ This project follows a simplified version of the guidelines from
 
 ## [Unreleased]
 
+### Fixed
+- Isolated robot initialization and polling failures so one unavailable robot no
+  longer prevents other robots in the same account from operating. Unavailable
+  robots are retried automatically and recover without reloading the integration.
+
 ## [2026.10.1] - 2026-10-13
 
 ### Fixed
