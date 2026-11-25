@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from pybotvac.exceptions import NeatoException
+from requests import RequestException
 
 from .const import MIN_TIME_BETWEEN_UPDATES, ROBOT_API_TIMEOUT
 
@@ -62,7 +63,7 @@ class VorwerkDataUpdateCoordinator(DataUpdateCoordinator["VorwerkRobotState"]):
             raise UpdateFailed(
                 f"Timed out updating Vorwerk robot {self.robot_state.robot.name}"
             ) from err
-        except NeatoException as err:
+        except (NeatoException, RequestException) as err:
             raise UpdateFailed(
                 f"Error communicating with Vorwerk robot {self.robot_state.robot.name}: {err}"
             ) from err

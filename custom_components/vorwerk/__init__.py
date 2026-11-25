@@ -17,9 +17,14 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import service
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.typing import ConfigType
-from pybotvac.exceptions import NeatoException, NeatoRobotException
+from pybotvac.exceptions import (
+    NeatoException,
+    NeatoRobotException,
+    NeatoUnsupportedDevice,
+)
 from pybotvac.robot import Robot
 from pybotvac.vorwerk import Vorwerk
+from requests import RequestException
 
 from .const import (
     ACTION,
@@ -117,7 +122,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: VorwerkConfigEntry) -> b
 
     await asyncio.gather(
         *(
-            robot_runtime.coordinator.async_config_entry_first_refresh()
+            robot_runtime.coordinator.async_refresh()
             for robot_runtime in runtime_robots
         )
     )
@@ -261,14 +266,27 @@ async def _async_create_robots(
     """Create Robot objects for all configured robots."""
 
     def create_robot(config: dict[str, Any]) -> Robot:
-        return Robot(
-            serial=config[VORWERK_ROBOT_SERIAL],
-            secret=config[VORWERK_ROBOT_SECRET],
-            traits=config.get(VORWERK_ROBOT_TRAITS, []),
-            vendor=Vorwerk(),
-            name=config[VORWERK_ROBOT_NAME],
-            endpoint=config.get(VORWERK_ROBOT_ENDPOINT, DEFAULT_ENDPOINT),
-        )
+        robot = Robot.__new__(Robot)
+        try:
+            robot.__init__(
+                serial=config[VORWERK_ROBOT_SERIAL],
+                secret=config[VORWERK_ROBOT_SECRET],
+                traits=config.get(VORWERK_ROBOT_TRAITS, []),
+                vendor=Vorwerk(),
+                name=config[VORWERK_ROBOT_NAME],
+                endpoint=config.get(VORWERK_ROBOT_ENDPOINT, DEFAULT_ENDPOINT),
+            )
+        except NeatoUnsupportedDevice:
+            raise
+        except (NeatoRobotException, RequestException):
+            # pybotvac initializes the robot connection details before its
+            # initial state request. Keep the object so its coordinator can
+            # retry this individual robot without blocking the account.
+            _LOGGER.warning(
+                "Unable to initialize Vorwerk robot %s; updates will be retried",
+                robot.name,
+            )
+        return robot
 
     try:
         return await asyncio.gather(

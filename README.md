@@ -28,7 +28,7 @@ The integration is included in the default HACS store and does not need to be ad
 6. Enter the email address used by the MyKobold app.
 7. Enter the one-time code sent by Vorwerk.
 
-The login uses the MyKobold account, not a Vorwerk online-shop account. Home Assistant creates one device for each robot assigned to the account.
+The login uses the MyKobold account, not a Vorwerk online-shop account. Home Assistant creates one device for each robot assigned to the account. Robots are updated independently: reachable robots continue to work if another robot is offline. Unavailable robots are retried automatically and recover without reloading the integration.
 
 ## Entities
 

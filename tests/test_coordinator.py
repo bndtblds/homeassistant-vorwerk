@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import asyncio
 import threading
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
-from pybotvac.exceptions import NeatoException
+from pybotvac.exceptions import NeatoException, NeatoRobotException
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.vorwerk import VorwerkRobotState
@@ -120,3 +120,57 @@ def test_entity_unavailable_after_coordinator_failure(
     coordinator.last_update_success = False
 
     assert VorwerkVacuumEntity(coordinator).available is False
+
+
+async def test_robot_recovers_after_runtime_failure(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    robot_state: VorwerkRobotState,
+) -> None:
+    """Test automatic unavailability and recovery on later refreshes."""
+    type(robot_state.robot).state = PropertyMock(
+        side_effect=[
+            NeatoRobotException("offline"),
+            {"state": 1, "details": {"charge": 75}},
+        ]
+    )
+    robot_state.robot.get_general_info.return_value.json.return_value = {"data": {}}
+    coordinator = make_coordinator(hass, config_entry, robot_state)
+    entity = VorwerkVacuumEntity(coordinator)
+
+    await coordinator.async_refresh()
+    assert not coordinator.last_update_success
+    assert not entity.available
+
+    await coordinator.async_refresh()
+    assert coordinator.last_update_success
+    assert entity.available
+
+
+async def test_all_robots_recover_independently(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+) -> None:
+    """Test recovery after all robots are temporarily unavailable."""
+    coordinators = []
+    for serial in ("VR300-1234", "VR300-5678"):
+        robot = MagicMock()
+        robot.name = serial
+        robot.serial = serial
+        type(robot).state = PropertyMock(
+            side_effect=[
+                NeatoRobotException("offline"),
+                {"state": 1, "details": {}},
+            ]
+        )
+        robot.get_general_info.return_value.json.return_value = {"data": {}}
+        coordinators.append(
+            make_coordinator(hass, config_entry, VorwerkRobotState(robot))
+        )
+
+    await asyncio.gather(*(item.async_refresh() for item in coordinators))
+    assert all(not item.last_update_success for item in coordinators)
+
+    await asyncio.gather(*(item.async_refresh() for item in coordinators))
+    assert all(item.last_update_success for item in coordinators)
+    assert all(item.data.available for item in coordinators)
